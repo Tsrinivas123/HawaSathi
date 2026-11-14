@@ -17,6 +17,7 @@ import {
   AnalysisResult,
   StakeholderType,
   Language,
+  StakeholderAction,
 } from '@/lib/types';
 import { parseAndNormalizeData } from '@/lib/normalizer';
 import { BHOPAL_MESSY_SAMPLE_CSV } from '@/lib/sampleData';
@@ -41,15 +42,8 @@ export default function Home() {
       setRecords(parsedRecords);
       setQualityReport(parsedReport);
 
-      // Pre-compute initial intelligence so judge is greeted with a complete, working dashboard
-      const avgAqi = 265;
-      const initialIntel = generateDeterministicIntelligence(
-        parsedRecords,
-        parsedReport,
-        avgAqi,
-        'Very Poor'
-      );
-      setAnalysis(initialIntel);
+      // Immediately run real Gemini analysis
+      runAnalysisWithRecords(parsedRecords, parsedReport);
     } catch (err) {
       console.error('Initial data parse error:', err);
     }
@@ -82,13 +76,13 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        throw new Error('Analysis API returned non-200');
+        throw new Error(`API returned HTTP ${res.status}`);
       }
 
       const result: AnalysisResult = await res.json();
       setAnalysis(result);
     } catch (err) {
-      console.warn('API call failed or offline, generating deterministic intelligence:', err);
+      console.warn('Live API request failed, engaging deterministic verification engine:', err);
       const validRecords = recList.filter((r) => r.aqi !== null);
       const avgAqi = validRecords.length > 0
         ? Math.round(validRecords.reduce((acc, r) => acc + (r.aqi || 0), 0) / validRecords.length)
@@ -110,7 +104,6 @@ export default function Home() {
     if (target) {
       setTraceRecord(target);
     } else {
-      // Create a fallback trace record if ID is from sample
       setTraceRecord(records[0] || null);
     }
   };
@@ -122,6 +115,14 @@ export default function Home() {
       stakeholderActions: analysis.stakeholderActions.map((act) =>
         act.id === id ? { ...act, status } : act
       ),
+    });
+  };
+
+  const handleCreateAction = (newAction: StakeholderAction) => {
+    if (!analysis) return;
+    setAnalysis({
+      ...analysis,
+      stakeholderActions: [newAction, ...analysis.stakeholderActions],
     });
   };
 
@@ -188,6 +189,7 @@ export default function Home() {
                 actions={analysis?.stakeholderActions || []}
                 currentStakeholder={stakeholder}
                 onUpdateActionStatus={handleUpdateActionStatus}
+                onCreateAction={handleCreateAction}
               />
             )}
 

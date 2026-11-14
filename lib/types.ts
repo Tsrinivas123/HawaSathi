@@ -105,4 +105,5 @@ export interface AnalysisResult {
   comparison: BriefingComparison;
   timestamp: string;
   isAiGenerated: boolean;
+  aiModelUsed?: string;
 }

@@ -75,7 +75,7 @@ export const TopNav: React.FC<TopNavProps> = ({
         {/* Gemini Engine Status */}
         <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 text-xs">
           <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="font-medium">Gemini 2.5 Flash</span>
+          <span className="font-medium">Google Gemini 3.5 Flash</span>
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
         </div>
 

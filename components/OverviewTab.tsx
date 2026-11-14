@@ -110,7 +110,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 className="flex items-center space-x-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-lg shadow-emerald-500/25 transition-all cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Load Bhopal Sensor Dataset (Sample)</span>
+                <span>Load Bhopal Sensor Dataset [DEMO DATA]</span>
               </button>
               <button
                 onClick={() => setActiveTab('data_studio')}

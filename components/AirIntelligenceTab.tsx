@@ -87,15 +87,19 @@ export const AirIntelligenceTab: React.FC<AirIntelligenceTabProps> = ({
                 Civic Air Quality Executive Briefing
               </h2>
               <p className="text-xs text-slate-400">
-                Generated via Gemini 2.5 Multi-Point Reasoning Engine • {new Date(analysis.timestamp).toLocaleTimeString()} IST
+                Generated via {analysis.aiModelUsed || 'Gemini 3.5 Flash'} Multi-Point Reasoning Engine • {new Date(analysis.timestamp).toLocaleTimeString()} IST
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center space-x-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{analysis.isAiGenerated ? 'Gemini 2.5 Live' : 'Deterministic Engine Verified'}</span>
+            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center space-x-1 ${
+              analysis.isAiGenerated
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border border-amber-200'
+            }`}>
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{analysis.isAiGenerated ? `${analysis.aiModelUsed || 'Gemini 3.5'} Live AI` : 'Offline Deterministic Audit'}</span>
             </span>
           </div>
         </div>

@@ -72,15 +72,3 @@ Most air quality platforms display raw, passive AQI numbers. In real-world urban
 
 ---
 
-## 🏆 PromptWars Bhopal 2026 Pitch Script (2 Minutes)
-
-- **0:00 - 0:25 (The Hook)**:  
-  *"Respected Judges, every morning in Bhopal, millions check AQI apps and see a red number like 320. But what does a Ward Officer do with that number? Does a school cancel morning sports? HawaSathi answers this. We bridge the gap from raw air data to verified civic action."*
-- **0:25 - 0:55 (The Live Demo)**:  
-  *"Look at our Data Studio. We drop in a messy municipal sensor feed with inconsistent ppm units, missing values, and a sensor saturation outlier of 999. HawaSathi instantly normalizes it, flags the anomalies, and generates a 100% traceable quality audit."*
-- **0:55 - 1:25 (The Intelligence & Traceability)**:  
-  *"Clicking into Air Intelligence, Gemini 2.5 reveals our citywide briefing. Every single hotspot is mathematically anchored to an exact record ID like `REC-004`—zero hallucinations. And look at our Local Actions: toggle to Ward Officer for mist cannon deployment; toggle to School Admin for student respiratory advisories."*
-- **1:25 - 1:45 (Citizen Inclusion & Comparison)**:  
-  *"In our Citizen Advisory Studio, we generate 1-click WhatsApp bulletins in Hindi, English, and Hinglish, with dedicated tiers for young children and asthma patients. Plus, our Briefing Comparison proves whether yesterday's misting actually worked."*
-- **1:45 - 2:00 (The Conclusion)**:  
-  *"HawaSathi isn't another passive dashboard—it is an actionable civic environmental operating system for India's smart cities. Thank you!"*

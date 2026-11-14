@@ -94,14 +94,14 @@ export const DataStudioTab: React.FC<DataStudioTabProps> = ({
               className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg flex items-center space-x-1.5 transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Load Bhopal Messy Feed (Sample 1)</span>
+              <span>Load Bhopal Feed [DEMO DATA]</span>
             </button>
             <button
               onClick={() => onDataParsed(CLEAN_BENCHMARK_CSV)}
               className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg flex items-center space-x-1.5 transition-all cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Load Clean Baseline (Sample 2)</span>
+              <span>Load Clean Baseline [DEMO DATA]</span>
             </button>
           </div>
         </div>

@@ -101,7 +101,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
             <span className="text-slate-400 font-medium">Underlying Model:</span>
             <div className="font-bold text-navy-900 flex items-center space-x-1.5">
-              <span>Google Gemini 2.5 Flash</span>
+              <span>Google Gemini 3.5 Flash-Lite / Flash</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">

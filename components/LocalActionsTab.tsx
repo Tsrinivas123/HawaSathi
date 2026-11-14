@@ -13,6 +13,8 @@ import {
   Check,
   MapPin,
   FileCheck,
+  PlusCircle,
+  X,
 } from 'lucide-react';
 import { StakeholderAction, StakeholderType } from '@/lib/types';
 
@@ -20,15 +22,27 @@ interface LocalActionsTabProps {
   actions: StakeholderAction[];
   currentStakeholder: StakeholderType;
   onUpdateActionStatus: (id: string, status: StakeholderAction['status']) => void;
+  onCreateAction?: (action: StakeholderAction) => void;
 }
 
 export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
   actions,
   currentStakeholder,
   onUpdateActionStatus,
+  onCreateAction,
 }) => {
   const [filterStakeholder, setFilterStakeholder] = useState<StakeholderType | 'all'>(currentStakeholder);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // New action form state
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newStakeholder, setNewStakeholder] = useState<StakeholderType>(currentStakeholder);
+  const [newPriority, setNewPriority] = useState<'High' | 'Medium' | 'Low'>('High');
+  const [newLocations, setNewLocations] = useState('');
+  const [newEvidence, setNewEvidence] = useState('');
+  const [newType, setNewType] = useState<'confirmed_action' | 'investigative_hypothesis'>('confirmed_action');
 
   const filtered = actions.filter(
     (a) => filterStakeholder === 'all' || a.stakeholder === filterStakeholder
@@ -39,6 +53,32 @@ export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedId(action.id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newDescription.trim()) return;
+
+    const newAct: StakeholderAction = {
+      id: `ACT-${String(actions.length + 1).padStart(2, '0')}`,
+      stakeholder: newStakeholder,
+      priority: newPriority,
+      actionTitle: newTitle.trim(),
+      description: newDescription.trim(),
+      targetLocations: newLocations.split(',').map((s) => s.trim()).filter(Boolean),
+      evidenceBasis: newEvidence.trim() || 'Observed telemetry anomaly requiring field dispatch',
+      type: newType,
+      status: 'pending',
+    };
+
+    if (onCreateAction) {
+      onCreateAction(newAct);
+    }
+    setShowCreateModal(false);
+    setNewTitle('');
+    setNewDescription('');
+    setNewLocations('');
+    setNewEvidence('');
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -66,51 +106,62 @@ export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
           </p>
         </div>
 
-        {/* Filter buttons */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-medium">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Create Action Button */}
           <button
-            onClick={() => setFilterStakeholder('all')}
-            className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-              filterStakeholder === 'all'
-                ? 'bg-white text-navy-900 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer"
           >
-            All Roles ({actions.length})
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Dispatch New Action</span>
           </button>
-          <button
-            onClick={() => setFilterStakeholder('ward_officer')}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-              filterStakeholder === 'ward_officer'
-                ? 'bg-white text-blue-700 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Ward Officer</span>
-          </button>
-          <button
-            onClick={() => setFilterStakeholder('housing_society')}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-              filterStakeholder === 'housing_society'
-                ? 'bg-white text-amber-700 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Housing Society</span>
-          </button>
-          <button
-            onClick={() => setFilterStakeholder('school_admin')}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-              filterStakeholder === 'school_admin'
-                ? 'bg-white text-emerald-700 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>School Admin</span>
-          </button>
+
+          {/* Filter buttons */}
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-medium">
+            <button
+              onClick={() => setFilterStakeholder('all')}
+              className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                filterStakeholder === 'all'
+                  ? 'bg-white text-navy-900 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Roles ({actions.length})
+            </button>
+            <button
+              onClick={() => setFilterStakeholder('ward_officer')}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                filterStakeholder === 'ward_officer'
+                  ? 'bg-white text-blue-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Ward Officer</span>
+            </button>
+            <button
+              onClick={() => setFilterStakeholder('housing_society')}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                filterStakeholder === 'housing_society'
+                  ? 'bg-white text-amber-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Housing Society</span>
+            </button>
+            <button
+              onClick={() => setFilterStakeholder('school_admin')}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                filterStakeholder === 'school_admin'
+                  ? 'bg-white text-emerald-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>School Admin</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -218,6 +269,117 @@ export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
           ))
         )}
       </div>
+
+      {/* Create New Action Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-navy-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
+            <div className="p-4 bg-navy-900 text-white flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <ClipboardCheck className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-xs font-bold">Dispatch New Civic Action Order</h3>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleFormSubmit} className="p-5 space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Action Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Deploy Mist Cannons along Kolar Road"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:outline-hidden focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Operational Directive</label>
+                <textarea
+                  required
+                  rows={2}
+                  placeholder="Specific task details, schedules, and instructions..."
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:outline-hidden focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Assigned Stakeholder</label>
+                  <select
+                    value={newStakeholder}
+                    onChange={(e) => setNewStakeholder(e.target.value as any)}
+                    className="w-full p-2 border border-slate-300 rounded-lg focus:outline-hidden"
+                  >
+                    <option value="ward_officer">Ward Officer</option>
+                    <option value="housing_society">Housing Society</option>
+                    <option value="school_admin">School Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Priority Level</label>
+                  <select
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value as any)}
+                    className="w-full p-2 border border-slate-300 rounded-lg focus:outline-hidden"
+                  >
+                    <option value="High">High Priority</option>
+                    <option value="Medium">Medium Priority</option>
+                    <option value="Low">Low Priority</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Target Locations / Wards (Comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Ward 48, MP Nagar Zone-1"
+                  value={newLocations}
+                  onChange={(e) => setNewLocations(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:outline-hidden focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Evidence Basis / Telemetry Note</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Traceable to REC-001 with PM2.5 > 140 µg/m³"
+                  value={newEvidence}
+                  onChange={(e) => setNewEvidence(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:outline-hidden focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-xs cursor-pointer"
+                >
+                  Create Action Order
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

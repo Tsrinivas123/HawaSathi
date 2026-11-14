@@ -50,6 +50,62 @@ export const CitizenAdvisoryTab: React.FC<CitizenAdvisoryTabProps> = ({
     window.print();
   };
 
+  const handleDownloadBriefingNote = () => {
+    if (!advisory || !analysis) return;
+    const dateStr = new Date().toLocaleString();
+    const memo = `===============================================================
+OFFICIAL CIVIC AIR QUALITY INTERNAL BRIEFING MEMO
+===============================================================
+MUNICIPAL WARD & CIVIC INTELLIGENCE DIVISION
+ISSUED AT: ${dateStr}
+AI REASONING ENGINE: ${analysis.aiModelUsed || 'Gemini 3.5 Flash'}
+AUTHENTICATION: VERIFIED & TRACEABLE
+
+1. EXECUTIVE SYNOPSIS
+---------------------------------------------------------------
+Average City AQI: ${analysis.averageAqi} (${analysis.overallAqiCategory})
+Dominant Pollutant: ${analysis.primaryPollutant}
+Data Reliability: ${analysis.dataReliability}
+
+2. FORMAL ADMINISTRATIVE DIRECTIVE
+---------------------------------------------------------------
+Headline: ${advisory.headline}
+Summary: ${advisory.summary}
+
+Mandatory Protocols:
+${advisory.generalGuidance.map((g, i) => `[${i + 1}] ${g}`).join('\n')}
+
+3. IDENTIFIED HIGH-ATTENTION HOTSPOTS
+---------------------------------------------------------------
+${analysis.hotspots.map((h, i) => `[Node ${i + 1}] ${h.location} (${h.ward}) - Measured: ${h.measuredValue} ${h.unit}
+   Observation: ${h.whyNoteworthy}
+   Supporting Sensor Records: ${h.supportingRecordIds.join(', ')}
+   Classification: ${h.category} (Confidence: ${h.confidence})`).join('\n\n')}
+
+4. VULNERABLE COHORT SPECIAL PROTECTIONS
+---------------------------------------------------------------
+${advisory.vulnerablePrecautions.map(p => `* ${p.group}: ${p.precaution}`).join('\n')}
+
+5. COMPARATIVE DELTA AUDIT (vs 24h Baseline)
+---------------------------------------------------------------
+Previous Baseline AQI: 211
+Net Atmospheric Shift: ${analysis.comparison.aqiDelta > 0 ? '+' : ''}${analysis.comparison.aqiDelta} AQI Points
+Trend: ${analysis.comparison.aqiTrend.toUpperCase()}
+Intervention Efficacy: ${analysis.comparison.interventionEffectiveness}
+
+---------------------------------------------------------------
+ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
+===============================================================`;
+
+    const blob = new Blob([memo], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `HawaSathi_Internal_Briefing_${new Date().toISOString().slice(0, 10)}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!advisory) {
     return (
       <div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-400">
@@ -143,7 +199,15 @@ export const CitizenAdvisoryTab: React.FC<CitizenAdvisoryTabProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleDownloadBriefingNote}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold bg-navy-900 hover:bg-navy-850 text-white rounded-lg transition-all shadow-xs cursor-pointer"
+              title="Generate and download official internal briefing text file"
+            >
+              <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Internal Briefing (.txt)</span>
+            </button>
             <button
               onClick={handleCopyWhatsApp}
               className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-xs cursor-pointer"

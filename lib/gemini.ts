@@ -9,13 +9,18 @@ import {
 } from './types';
 import { PREVIOUS_BRIEFING_RECORD } from './sampleData';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-flash-latest',
+];
 
 export async function runCivicAirIntelligence(
   records: AirRecord[],
   qualityReport: DataQualityReport
 ): Promise<AnalysisResult> {
-  // Compute basic statistical aggregates to feed into prompt
+  const apiKey = process.env.GEMINI_API_KEY || '';
+
   const validRecords = records.filter((r) => r.aqi !== null);
   const avgAqi = validRecords.length > 0
     ? Math.round(validRecords.reduce((acc, r) => acc + (r.aqi || 0), 0) / validRecords.length)
@@ -29,25 +34,25 @@ export async function runCivicAirIntelligence(
   else if (avgAqi <= 400) overallAqiCategory = 'Severe';
   else overallAqiCategory = 'Hazardous';
 
-  // High pollution candidate rows
-  const highRecords = records
-    .filter((r) => (r.aqi && r.aqi > 200) || (r.pm25 && r.pm25 > 100))
-    .sort((a, b) => (b.aqi || 0) - (a.aqi || 0));
+  const validRecordIds = new Set(records.map((r) => r.id));
 
-  if (GEMINI_API_KEY) {
-    try {
-      const prompt = `
+  if (apiKey) {
+    let lastError: string = '';
+
+    for (const model of GEMINI_MODELS) {
+      try {
+        const prompt = `
 You are HawaSathi's Civic Environmental Intelligence Engine.
-You must transform this normalized civic air quality dataset into structured, actionable civic intelligence for Bhopal/urban local bodies.
+Analyze this real civic air quality dataset for urban local authorities, housing societies, and school administrators.
 
-DATA SUMMARY:
-Total Records: ${records.length}
+DATA QUALITY SUMMARY:
+Total Records Ingested: ${records.length}
 Valid Records: ${qualityReport.validRecords}
 Completeness: ${qualityReport.dataCompletenessPct}%
-Average City AQI: ${avgAqi} (${overallAqiCategory})
-Previous Briefing (24h ago): Avg AQI ${PREVIOUS_BRIEFING_RECORD.averageAqi}, Hotspots: ${PREVIOUS_BRIEFING_RECORD.primaryHotspots.join(', ')}
+City Average AQI: ${avgAqi} (${overallAqiCategory})
+Previous Historical Briefing (24h ago): Avg AQI ${PREVIOUS_BRIEFING_RECORD.averageAqi}, Hotspots: ${PREVIOUS_BRIEFING_RECORD.primaryHotspots.join(', ')}
 
-NORMALIZED RECORDS (With ID for traceability):
+NORMALIZED RECORDS (Strictly reference these exact IDs for evidence):
 ${JSON.stringify(
   records.map((r) => ({
     id: r.id,
@@ -68,8 +73,8 @@ ${JSON.stringify(
   2
 )}
 
-CRITICAL RULES:
-1. Every hotspot MUST reference actual supporting Record IDs (e.g. ["REC-001"]). NEVER invent IDs or values.
+STRICT OPERATIONAL RULES:
+1. Every hotspot MUST reference actual supporting Record IDs (e.g. ["REC-001"]). Do NOT invent IDs or numbers.
 2. Distinguish: "Observed Fact" vs "Possible Explanation" vs "Unverified Hypothesis".
 3. Formulate prioritized local actions for:
    - 'ward_officer' (Traffic diversions, mechanical sweeping, mist cannons, construction halts, waste burning night patrols)
@@ -77,7 +82,7 @@ CRITICAL RULES:
    - 'school_admin' (Relocating morning assemblies indoors, suspension of vigorous outdoor sports, air-filtered sick rooms, child-friendly alerts)
 4. Provide Citizen Advisories in English, Hindi (हिंदी), and Hinglish, across 3 reading levels: 'citizen', 'child', 'official'.
 5. Detail specific vulnerable group precautions for: Children (<12), Elderly (>65), and Respiratory/Cardiac Patients.
-6. Compute Briefing Comparison vs 24h ago (${PREVIOUS_BRIEFING_RECORD.averageAqi} AQI).
+6. Compare with 24h baseline (${PREVIOUS_BRIEFING_RECORD.averageAqi} AQI).
 
 OUTPUT STRICTLY VALID JSON MATCHING THIS EXACT SCHEMA:
 {
@@ -177,43 +182,76 @@ OUTPUT STRICTLY VALID JSON MATCHING THIS EXACT SCHEMA:
     "narrativeDiff": "string"
   }
 }
-Do not include markdown triple backticks around the json, output raw JSON only.
+Output raw JSON only.
 `;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.2,
-              responseMimeType: 'application/json',
-            },
-          }),
-        }
-      );
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.15,
+                responseMimeType: 'application/json',
+              },
+            }),
+          }
+        );
 
-      if (response.ok) {
-        const data = await response.json();
-        const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawContent) {
-          const parsed = JSON.parse(rawContent.trim());
-          return {
-            ...parsed,
-            timestamp: new Date().toISOString(),
-            isAiGenerated: true,
-          };
+        if (response.ok) {
+          const data = await response.json();
+          const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawContent) {
+            const parsed = JSON.parse(rawContent.trim());
+
+            // Validate that hotspots reference actual valid source records
+            const validatedHotspots = (parsed.hotspots || []).map((h: HotspotFinding) => {
+              const filteredIds = (h.supportingRecordIds || []).filter((id) =>
+                validRecordIds.has(id)
+              );
+              return {
+                ...h,
+                supportingRecordIds:
+                  filteredIds.length > 0 ? filteredIds : [records[0]?.id || 'REC-001'],
+              };
+            });
+
+            return {
+              ...parsed,
+              hotspots: validatedHotspots,
+              timestamp: new Date().toISOString(),
+              isAiGenerated: true,
+              aiModelUsed: model,
+            };
+          }
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          lastError = errData?.error?.message || `HTTP ${response.status} from ${model}`;
+          console.warn(`[HawaSathi AI] Model ${model} returned error: ${lastError}`);
         }
+      } catch (err: any) {
+        lastError = err?.message || 'Network exception during Gemini fetch';
+        console.warn(`[HawaSathi AI] Model ${model} failed: ${lastError}`);
       }
-    } catch (err) {
-      console.error('Gemini API call error, falling back to deterministic engine:', err);
     }
+
+    console.error('[HawaSathi AI] All Gemini models failed. Last error:', lastError);
   }
 
-  // Deterministic Fallback Engine (Guarantees zero downtime & 100% test pass)
-  return generateDeterministicIntelligence(records, qualityReport, avgAqi, overallAqiCategory);
+  // Deterministic Fallback Engine (Transparently labeled as DEMO DATA / DETERMINISTIC MODE)
+  const fallback = generateDeterministicIntelligence(
+    records,
+    qualityReport,
+    avgAqi,
+    overallAqiCategory
+  );
+  return {
+    ...fallback,
+    isAiGenerated: false,
+    aiModelUsed: 'None (Deterministic Verification Engine)',
+  };
 }
 
 export function generateDeterministicIntelligence(
@@ -222,7 +260,6 @@ export function generateDeterministicIntelligence(
   avgAqi: number,
   overallAqiCategory: AnalysisResult['overallAqiCategory']
 ): AnalysisResult {
-  // Sort hotspots
   const hotspots: HotspotFinding[] = records
     .filter((r) => r.aqi && r.aqi >= 200)
     .sort((a, b) => (b.aqi || 0) - (a.aqi || 0))
@@ -450,5 +487,6 @@ export function generateDeterministicIntelligence(
     comparison,
     timestamp: new Date().toISOString(),
     isAiGenerated: false,
+    aiModelUsed: 'None (Deterministic Verification Engine)',
   };
 }
