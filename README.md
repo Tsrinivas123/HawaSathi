@@ -3,10 +3,14 @@
 > **PromptWars Bhopal 2026** • ₹50,000 Grand Prize Track  
 > *AI Civic Environmental Intelligence Suite for Urban Local Bodies, Housing Societies, and School Administrators.*
 
+[![Live Deployment](https://img.shields.io/badge/Live%20App-hawasathi.vercel.app-10B981?style=for-the-badge&logo=vercel)](https://hawasathi.vercel.app)
 [![Built with Next.js 14](https://img.shields.io/badge/Built%20with-Next.js%2014-black?style=flat&logo=next.js)](https://nextjs.org/)
-[![Powered by Gemini 2.5](https://img.shields.io/badge/Powered%20by-Google%20Gemini%202.5-4285F4?style=flat&logo=google)](https://ai.google.dev/)
+[![Powered by Gemini 3.5](https://img.shields.io/badge/Powered%20by-Google%20Gemini%203.5-4285F4?style=flat&logo=google)](https://ai.google.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 [![CPCB Standard Compliant](https://img.shields.io/badge/Standards-CPCB%20%26%20NAAQS-10B981?style=flat)]()
+
+**Live Production URL**: [https://hawasathi.vercel.app](https://hawasathi.vercel.app)  
+**GitHub Repository**: [https://github.com/Tsrinivas123/HawaSathi](https://github.com/Tsrinivas123/HawaSathi)
 
 ---
 
