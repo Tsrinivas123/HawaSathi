@@ -1,0 +1,9 @@
+Locality Name,Ward_No,Device_ID,Recorded_Time,PM 2.5 (ug/m3),PM_10,AQI_Index,Nitrogen_Dioxide,SO2,CO [ppm],Ozone
+Habibganj Transit Corridor,Ward 45,HBG-01,2026-11-14 09:15,142.5,220.0,318,45.2,16.5,2.8 ppm,38.0
+New Market Malviya Nagar,Ward 33,NWM-02,2026-11-14 09:15,95.0,158.0,210,34.0,12.0,1.4 ppm,45.2
+Govindpura Industrial Sector B,Ward 60,IND-G-05,2026-11-14 09:20,230.8,999.0,395,82.0,46.5,4.6 ppm,18.5
+VIP Road Upper Lake Promenade,Ward 22,VIP-L-01,2026-11-14 09:00,36.2,62.0,92,15.2,6.8,0.5 ppm,64.0
+Karond Bypass Freight Terminal,Ward 12,KRD-F-03,2026-11-14 09:25,195.4,325.0,362,68.4,22.0,3.8 ppm,15.0
+AIIMS Bhopal Health Node,Ward 54,AIM-H-01,2026-11-14 09:10,52.0,N/A,135,20.5,8.2,0.7 ppm,52.0
+Kolar Road Lalita Nagar,Ward 81,KLR-L-02,2026-11-14 09:30,118.0,185.0,285,41.0,14.5,1.9 ppm,36.5
+Bairagarh Textile Market,Ward 04,BRG-T-01,2026-11-14 09:15,160.2,265.0,332,54.0,21.5,3.0 ppm,28.0

@@ -194,6 +194,7 @@ Output raw JSON only.
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: {
                 temperature: 0.15,
+                maxOutputTokens: 8192,
                 responseMimeType: 'application/json',
               },
             }),
@@ -204,7 +205,17 @@ Output raw JSON only.
           const data = await response.json();
           const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (rawContent) {
-            const parsed = JSON.parse(rawContent.trim());
+            let parsed: any;
+            try {
+              parsed = JSON.parse(rawContent.trim());
+            } catch (parseErr) {
+              const lastBrace = rawContent.lastIndexOf('}');
+              if (lastBrace > 0) {
+                parsed = JSON.parse(rawContent.substring(0, lastBrace + 1));
+              } else {
+                throw parseErr;
+              }
+            }
 
             // Validate that hotspots reference actual valid source records
             const validatedHotspots = (parsed.hotspots || []).map((h: HotspotFinding) => {
