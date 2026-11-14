@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { AnalysisResult, Language, ReadingLevel } from '@/lib/types';
 import { SYSTEM_LIMITS } from '@/lib/constants';
+import { getStoredReadingLevel, saveStoredReadingLevel } from '@/lib/storage';
 
 interface CitizenAdvisoryTabProps {
   analysis: AnalysisResult | null;
@@ -34,8 +35,19 @@ const CitizenAdvisoryTabComponent: React.FC<CitizenAdvisoryTabProps> = ({
   language,
   setLanguage,
 }) => {
-  const [readingLevel, setReadingLevel] = useState<ReadingLevel>('citizen');
+  const [readingLevel, setReadingLevelState] = useState<ReadingLevel>('citizen');
   const [copied, setCopied] = useState(false);
+
+  // Restore saved reading level on mount
+  React.useEffect(() => {
+    const savedLevel = getStoredReadingLevel();
+    if (savedLevel) setReadingLevelState(savedLevel);
+  }, []);
+
+  const setReadingLevel = (level: ReadingLevel) => {
+    setReadingLevelState(level);
+    saveStoredReadingLevel(level);
+  };
 
   // Look up advisory strictly matching chosen language first
   const key = `${language}_${readingLevel}`;
@@ -49,7 +61,9 @@ const CitizenAdvisoryTabComponent: React.FC<CitizenAdvisoryTabProps> = ({
   const handleCopyWhatsApp = () => {
     if (!advisory) return;
     const text = `📢 *${advisory.headline}*\n\n${advisory.summary}\n\n🛡️ *Key Precautions:*\n${advisory.generalGuidance.map((g) => `• ${g}`).join('\n')}\n\n⚠️ *Vulnerable Groups:*\n${advisory.vulnerablePrecautions.map((vp) => `• *${vp.group}*: ${vp.precaution}`).join('\n')}\n\n✅ *DO's:* ${advisory.dosAndDonts.dos.join(', ')}\n❌ *DON'Ts:* ${advisory.dosAndDonts.donts.join(', ')}\n\n_Issued via HawaSathi Civic Environmental Intelligence_`;
-    navigator.clipboard.writeText(text);
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

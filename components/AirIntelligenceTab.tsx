@@ -126,7 +126,7 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
                 : 'bg-amber-50 text-amber-800 border border-amber-200'
             }`}>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-              <span>{analysis.isAiGenerated ? `${analysis.aiModelUsed || 'Gemini 3.5'} Live AI Engine` : 'Offline Deterministic Audit'}</span>
+              <span>{analysis.isAiGenerated ? 'Live AI (Gemini)' : 'Rule-based fallback'}</span>
             </span>
           </div>
         </div>
@@ -252,8 +252,14 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
                 {hotspot.whyNoteworthy}
               </p>
 
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-slate-400">Supporting Evidence:</span>
+              <div className="flex flex-wrap items-center justify-between pt-1 gap-2">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[11px] text-slate-400">Supporting Evidence:</span>
+                  <span className="inline-flex items-center space-x-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" aria-hidden="true" />
+                    <span>Verified against data</span>
+                  </span>
+                </div>
                 <div className="flex items-center space-x-1.5">
                   {hotspot.supportingRecordIds.map((recId) => (
                     <button

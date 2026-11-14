@@ -23,7 +23,8 @@ export async function runCivicAirIntelligence(
 ): Promise<AnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY || '';
 
-  const validRecords = records.filter((r) => r.aqi !== null);
+  // Strictly exclude sensor saturation outliers (e.g. 999.0) and duplicates from city average
+  const validRecords = records.filter((r) => r.status === 'valid' && r.aqi !== null);
   const avgAqi = validRecords.length > 0
     ? Math.round(validRecords.reduce((acc, r) => acc + (r.aqi || 0), 0) / validRecords.length)
     : SYSTEM_LIMITS.BASELINE_HISTORICAL_AQI;
@@ -32,7 +33,8 @@ export async function runCivicAirIntelligence(
   const overallAqiCategory: AnalysisResult['overallAqiCategory'] =
     rawCategory === 'Unknown' ? 'Moderate' : (rawCategory as AnalysisResult['overallAqiCategory']);
 
-  const validRecordIds = new Set(records.map((r) => r.id));
+  // Valid record IDs strictly limited to non-outlier, non-duplicate source records
+  const validRecordIds = new Set(validRecords.map((r) => r.id));
 
   if (apiKey) {
     for (const model of GEMINI_MODELS) {

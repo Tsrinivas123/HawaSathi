@@ -56,11 +56,12 @@ function parseNumericWithUnit(
 ): { num: number | null; flag?: string } {
   if (val === undefined || val === null) return { num: null };
   const str = String(val).trim();
-  if (str === '' || ['na', 'n/a', 'null', 'none', '-', 'nil'].includes(str.toLowerCase())) {
+  if (str === '' || ['na', 'n/a', 'null', 'none', '-', '--', 'nil', 'n.a.', 'n/d', 'missing', 'undefined'].includes(str.toLowerCase())) {
     return { num: null };
   }
 
-  const rawNum = parseFloat(str.replace(/[^0-9.-]/g, ''));
+  const numMatch = str.match(/[-+]?[0-9]*\.?[0-9]+/);
+  const rawNum = numMatch ? parseFloat(numMatch[0]) : NaN;
   if (isNaN(rawNum)) {
     return { num: null, flag: `Non-numeric value "${str}" in ${pollutant}` };
   }
@@ -225,7 +226,20 @@ export function parseAndNormalizeData(rawText: string): {
     const location = sanitizeText(rawLoc.replace(/^(Ward\s*\d+[\s:-]*)/i, '') || rawLoc);
     const ward = sanitizeText(String(mapped.ward || (rawLoc.match(/Ward\s*\d+/i)?.[0] ?? 'General Ward')));
     const station = sanitizeText(String(mapped.station || `Station-${(index % 4) + 1}`));
-    const timestamp = sanitizeText(String(mapped.timestamp || new Date().toISOString().replace('T', ' ').substring(0, 16)));
+
+    // Normalize mixed date formats (DD/MM/YYYY, DD-MM-YYYY, ISO strings)
+    const normalizeTimestamp = (rawVal: unknown): string => {
+      if (!rawVal) return new Date().toISOString().replace('T', ' ').substring(0, 16);
+      const s = String(rawVal).trim();
+      const dmy = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[\sT]+(\d{1,2}):(\d{1,2}))?/);
+      if (dmy) {
+        const [, d, m, y, h = '00', min = '00'] = dmy;
+        const pad = (n: string | number) => String(n).padStart(2, '0');
+        return `${y}-${pad(m)}-${pad(d)} ${pad(h)}:${pad(min)}`;
+      }
+      return s.slice(0, 30);
+    };
+    const timestamp = sanitizeText(normalizeTimestamp(mapped.timestamp));
 
     // Deduplication check
     const dedupKey = `${location.toLowerCase()}_${timestamp.toLowerCase()}`;

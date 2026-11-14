@@ -5,7 +5,7 @@ import { BHOPAL_MESSY_SAMPLE_CSV } from '../lib/sampleData';
 import { buildRecordLookupMap } from '../lib/utils';
 
 describe('End-to-End Civic Air Data Pipeline', () => {
-  it('should execute complete pipeline: Ingestion -> Normalization -> Hotspot Traceability -> Stakeholder Directives', () => {
+  it('should execute complete pipeline: Ingestion -> Normalization -> Hotspot Traceability -> Stakeholder Directives -> WhatsApp & Briefing Export', () => {
     // 1. Ingestion & Normalization
     const { records, qualityReport } = parseAndNormalizeData(BHOPAL_MESSY_SAMPLE_CSV);
     expect(records.length).toBeGreaterThan(0);
@@ -37,5 +37,19 @@ describe('End-to-End Civic Air Data Pipeline', () => {
     expect(actions.some((a) => a.stakeholder === 'ward_officer')).toBe(true);
     expect(actions.some((a) => a.stakeholder === 'housing_society')).toBe(true);
     expect(actions.some((a) => a.stakeholder === 'school_admin')).toBe(true);
+
+    // 7. Verify WhatsApp broadcast text formatting
+    const adv = intelligence.advisories['en_citizen'];
+    const whatsAppText = `📢 *${adv.headline}*\n\n${adv.summary}\n\n🛡️ *Key Precautions:*\n${adv.generalGuidance.map((g) => `• ${g}`).join('\n')}\n\n⚠️ *Vulnerable Groups:*\n${adv.vulnerablePrecautions.map((vp) => `• *${vp.group}*: ${vp.precaution}`).join('\n')}\n\n✅ *DO's:* ${adv.dosAndDonts.dos.join(', ')}\n❌ *DON'Ts:* ${adv.dosAndDonts.donts.join(', ')}\n\n_Issued via HawaSathi Civic Environmental Intelligence_`;
+    expect(whatsAppText).toContain('📢 *');
+    expect(whatsAppText).toContain('Key Precautions');
+    expect(whatsAppText).toContain('Vulnerable Groups');
+    expect(whatsAppText).toContain("DO's");
+    expect(whatsAppText).toContain("DON'Ts");
+
+    // 8. Verify Internal Briefing Note text generation
+    const memoText = `OFFICIAL CIVIC AIR QUALITY INTERNAL BRIEFING MEMO\nCity AQI: ${intelligence.averageAqi} (${intelligence.overallAqiCategory})\nHeadline: ${adv.headline}\nMandatory Protocols:\n${adv.generalGuidance.map((g, i) => `[${i + 1}] ${g}`).join('\n')}`;
+    expect(memoText).toContain('OFFICIAL CIVIC AIR QUALITY INTERNAL BRIEFING MEMO');
+    expect(memoText).toContain('Mandatory Protocols');
   });
 });

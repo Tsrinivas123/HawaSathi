@@ -12,16 +12,34 @@ import { SYSTEM_LIMITS } from '@/lib/constants';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// In-memory sliding window rate limiter
+/**
+ * SERVERLESS ARCHITECTURE NOTE ON IN-MEMORY RATE LIMITING & CACHING:
+ * 
+ * 1. Scope & Execution Context:
+ *    The `rateLimitMap` and `responseCache` below are stored in-memory within the active
+ *    Node.js runtime worker instance. On serverless platforms (e.g. Vercel Serverless Functions / AWS Lambda),
+ *    instances scale horizontally and are ephemeral. Therefore, these in-memory data structures provide
+ *    ultra-fast (< 1ms), zero-network-hop protection and LRU caching for all concurrent and warm-start requests
+ *    hitting that specific container instance.
+ * 
+ * 2. Limitation & Distributed Scalability Path:
+ *    In a globally distributed multi-region cluster where incoming traffic is routed across multiple distinct
+ *    stateless container instances or cold starts, in-memory state is isolated to each container and resets
+ *    upon instance recycling. For enterprise distributed rate limiting across all worldwide edge nodes,
+ *    a shared external store (e.g. Upstash Redis / Redis Cluster via `@upstash/ratelimit`) should be mounted
+ *    using environment credentials (`UPSTASH_REDIS_REST_URL`).
+ */
+
+// In-memory sliding window rate limiter (per-instance defense)
 interface RateLimitRecord {
   count: number;
   resetTime: number;
 }
 const rateLimitMap = new Map<string, RateLimitRecord>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 60;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 60; // 60 requests/min per IP
 
-// High-efficiency in-memory response cache (LRU-style with max 50 items)
+// High-efficiency in-memory response cache (LRU-style with max 50 items per instance)
 const responseCache = new Map<string, { result: AnalysisResult; timestamp: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache TTL
 const MAX_CACHE_ENTRIES = 50;

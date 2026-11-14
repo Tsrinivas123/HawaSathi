@@ -79,8 +79,10 @@ const ReportHistoryTabComponent: React.FC<ReportHistoryTabProps> = ({ analysis }
     setHistory(updated);
   };
 
-  // Determine previous briefing to compare against
-  const previousBriefing = history.length > 0 ? history[0] : null;
+  // Determine previous briefing to compare against:
+  // history[0] is the current active briefing.
+  // history[1] is the previous briefing. If only 0 or 1 exists, there is no previous brief yet!
+  const previousBriefing = history.length > 1 ? history[1] : null;
 
   const currentAqi = analysis?.averageAqi ?? 241;
   const prevAqi = previousBriefing ? previousBriefing.averageAqi : null;
@@ -113,10 +115,10 @@ const ReportHistoryTabComponent: React.FC<ReportHistoryTabProps> = ({ analysis }
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          {history.length > 0 ? (
+          {previousBriefing ? (
             <span className="text-xs font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center space-x-1.5">
               <Clock className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-              <span>Comparing vs: {previousBriefing?.timestamp}</span>
+              <span>Comparing vs: {previousBriefing.timestamp}</span>
             </span>
           ) : (
             <button
@@ -136,7 +138,7 @@ const ReportHistoryTabComponent: React.FC<ReportHistoryTabProps> = ({ analysis }
       {!previousBriefing && (
         <section aria-label="Initial Baseline Information" className="p-8 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
           <GitCompare className="w-10 h-10 text-emerald-600 mx-auto mb-2" aria-hidden="true" />
-          <h3 className="text-base font-bold text-navy-900">No Previous Briefing Recorded in Storage Yet</h3>
+          <h3 className="text-base font-bold text-navy-900">No previous brief yet</h3>
           <p className="text-xs text-slate-500 max-w-lg mx-auto leading-relaxed">
             This active session represents your initial municipal air intelligence baseline. As subsequent telemetry feeds are ingested, HawaSathi automatically computes atmospheric shifts, tracks newly emerged hotspots, and evaluates intervention effectiveness.
           </p>

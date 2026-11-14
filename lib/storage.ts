@@ -4,7 +4,7 @@
  * Implements universal hybrid persistence (localStorage with in-memory fallback for SSR/testing).
  */
 
-import { StakeholderAction, StakeholderType, Language, HotspotFinding } from '@/lib/types';
+import { StakeholderAction, StakeholderType, Language, ReadingLevel, HotspotFinding } from '@/lib/types';
 
 export interface StoredBriefing {
   id: string;
@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
   BRIEFINGS: 'hawasathi_briefing_history_v1',
   STAKEHOLDER: 'hawasathi_active_stakeholder_v1',
   LANGUAGE: 'hawasathi_active_language_v1',
+  READING_LEVEL: 'hawasathi_active_reading_level_v1',
 } as const;
 
 // In-memory fallback map for Node/SSR environments
@@ -170,6 +171,32 @@ export function getStoredLanguage(): Language | null {
 export function saveStoredLanguage(lang: Language): void {
   try {
     setItem(STORAGE_KEYS.LANGUAGE, lang);
+  } catch {
+    // Fail-safe
+  }
+}
+
+/**
+ * Get preferred reading level
+ */
+export function getStoredReadingLevel(): ReadingLevel | null {
+  try {
+    const val = getItem(STORAGE_KEYS.READING_LEVEL);
+    if (val === 'citizen' || val === 'child' || val === 'official') {
+      return val;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save preferred reading level
+ */
+export function saveStoredReadingLevel(level: ReadingLevel): void {
+  try {
+    setItem(STORAGE_KEYS.READING_LEVEL, level);
   } catch {
     // Fail-safe
   }

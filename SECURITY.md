@@ -18,9 +18,9 @@ HawaSathi enforces enterprise-grade civic data security, strict input boundary v
 
 ---
 
-## 2. HTTP Security Headers Audit
+## 2. HTTP Security Headers Specification
 
-HawaSathi receives an **A+ Rating** on security header benchmarks:
+HawaSathi enforces comprehensive security headers across all edge and API routes:
 
 ```http
 Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
