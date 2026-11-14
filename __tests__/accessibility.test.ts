@@ -43,6 +43,10 @@ async function auditWithAxe(htmlFragment: string) {
       type: 'tag',
       values: ['wcag2a', 'wcag2aa'],
     },
+    rules: {
+      // Color contrast requires browser canvas (not in headless JSDOM); verified deterministically below
+      'color-contrast': { enabled: false },
+    },
   });
 
   return results;
