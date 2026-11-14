@@ -454,6 +454,78 @@ export function generateDeterministicIntelligence(
         donts: ['Do not permit road milling without wet suppression', 'Do not delay public health advisories past 07:00 IST'],
       },
     },
+    hi_child: {
+      language: 'hi',
+      readingLevel: 'child',
+      headline: 'सुपर एयर बड्डी अलर्ट: आज बाहर की हवा थक गई है!',
+      summary: `आज बाहर हवा में बहुत छोटे-छोटे धूल कण हैं (AQI ${avgAqi} है)। इसका मतलब है कि आज हमें बाहर धूल में दौड़ने के बजाय क्लास या घर के अंदर मजेदार खेल खेलने चाहिए!`,
+      generalGuidance: [
+        'दोपहर के ब्रेक में बाहर दौड़ने की जगह कैरम, लूडो या ड्राइंग करें।',
+        'स्कूल बस का इंतजार करते समय अपना रंगीन मास्क जरूर पहनें।',
+        'सुपरहीरो की तरह अपने फेफड़ों को मजबूत रखने के लिए खूब पानी पिएं और फल खाएं!',
+      ],
+      vulnerablePrecautions: [
+        { group: 'खांसी या अस्थमा वाले बच्चे', precaution: 'सांस लेने में कोई भी परेशानी होने पर तुरंत टीचर को बताएं; इनहेलर हमेशा बैग में रखें।' },
+      ],
+      dosAndDonts: {
+        dos: ['हल्का गुनगुना पानी पिएं', 'क्लासरूम में इंडोर खेल खेलें', 'बड़ों को पत्तियां और कचरा न जलाने को कहें'],
+        donts: ['धूल भरी सड़कों पर तेज न दौड़ें', 'खुजली होने पर गंदे हाथों से आंखें न मलें'],
+      },
+    },
+    hi_official: {
+      language: 'hi',
+      readingLevel: 'official',
+      headline: `नगर निगम तकनीकी वायु गुणवत्ता ज्ञापन: शहरी सूचकांक ${avgAqi} [${overallAqiCategory}] दर्ज`,
+      summary: `शहरी वार्डों में टेलीमेट्री डेटा के अनुसार वायुमंडलीय उलटाव (Atmospheric Inversion) के कारण सूक्ष्म कण (PM2.5) सतह पर फंसे हुए हैं। उच्च-प्रदूषण वाले क्षेत्रों में तत्काल धूल नियंत्रण प्रोटोकॉल लागू करने का आदेश।`,
+      generalGuidance: [
+        'वायु प्रदूषण निवारण एवं नियंत्रण अधिनियम की धारा 19 के तहत खुले में कचरा जलाने वालों पर कड़ी निगरानी रखें।',
+        'पहचाने गए मुख्य चौराहों और औद्योगिक मार्गों पर एंटी-स्मॉग वॉटर गन और स्प्रिंकलर तैनात करें।',
+        'सभी निर्माण स्थलों को अनिवार्य रूप से धूलरोधी हरे पर्दे और पानी का छिड़काव करने का निर्देश दें।',
+      ],
+      vulnerablePrecautions: [
+        { group: 'संवेदनशील समूह सुरक्षा', precaution: 'शहरी प्राथमिक स्वास्थ्य केंद्रों (PHC) को नेब्युलाइजर और ऑक्सीजन बैकअप के साथ अलर्ट पर रखें।' },
+      ],
+      dosAndDonts: {
+        dos: ['यातायात का मार्ग परिवर्तन करें', 'सड़कों पर नियमित मैकेनिकल स्वीपिंग करवाएं', 'सेंसर रीडिंग का प्रति घंटे ऑडिट करें'],
+        donts: ['सड़क खुदाई का काम बिना गीले किए न होने दें', 'कचरा जलाने की शिकायतों में देरी न करें'],
+      },
+    },
+    hinglish_child: {
+      language: 'hinglish',
+      readingLevel: 'child',
+      headline: 'Super Air Buddy Alert: Aaj bahar ki hawa thodi tired hai!',
+      summary: `Aaj air mein thode zyada dust particles hain (AQI ${avgAqi} hai). Isliye aaj hum bahar ground mein bhaagne ke bajay classroom mein fun indoor games khelenge!`,
+      generalGuidance: [
+        'Recess time mein board games, drawing ya reading prefer karein.',
+        'Bus stop ya roadside par khade hote waqt mask zaroor lagayein.',
+        'Superheroes ki tarah strong lungs ke liye clean water aur fruits enjoy karein!',
+      ],
+      vulnerablePrecautions: [
+        { group: 'Asthma ya Cough wale kids', precaution: 'Agar breath lene mein problem ho toh turant teacher ko batayein; pump bag mein rakhein.' },
+      ],
+      dosAndDonts: {
+        dos: ['Warm water regularly drink karein', 'Indoor building blocks ya puzzles khelein', 'Adults ko dry leaves jalane se rokein'],
+        donts: ['Dusty roads ke paas fast run na karein', 'Eyes mein itching hone par dirty hands se rub na karein'],
+      },
+    },
+    hinglish_official: {
+      language: 'hinglish',
+      readingLevel: 'official',
+      headline: `Official Civic Memo: Urban Air Quality Index stands at ${avgAqi} [${overallAqiCategory}]`,
+      summary: `Ward telemetry indicate kar raha hai ki thermal inversion ke chalte ground-level particulate matter accumulate ho chuka hai. All ward officers ko immediate containment measures initiate karne ka directive issue kiya gaya hai.`,
+      generalGuidance: [
+        'Air Pollution Control Act ke under illegal biomass burning par instant penalties enforce karein.',
+        'Traffic junctions aur hotspots par municipal anti-smog mist cannons mobilize karein.',
+        'Active construction sites par dust mitigation aur wet suppression mandatory karein.',
+      ],
+      vulnerablePrecautions: [
+        { group: 'High Vulnerability Groups', precaution: 'Community health centers ko respiratory medicine aur nebulizers ke sath standby par rakhein.' },
+      ],
+      dosAndDonts: {
+        dos: ['Heavy transport vehicles ko bypass route par divert karein', 'Paved roads par water sprinkling maintain karein'],
+        donts: ['Wet suppression ke bina road construction allow na karein', 'Public advisories release karne mein delay na karein'],
+      },
+    },
   };
 
   const aqiDelta = avgAqi - PREVIOUS_BRIEFING_RECORD.averageAqi;

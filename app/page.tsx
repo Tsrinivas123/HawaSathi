@@ -134,6 +134,7 @@ export default function Home() {
         setActiveTab={setActiveTab}
         stakeholder={stakeholder}
         setStakeholder={setStakeholder}
+        language={language}
       />
 
       {/* Main Content Area */}
@@ -162,6 +163,7 @@ export default function Home() {
                 setActiveTab={setActiveTab}
                 onOpenTrace={handleOpenTrace}
                 onLoadSample={() => handleDataParsed(BHOPAL_MESSY_SAMPLE_CSV)}
+                language={language}
               />
             )}
 

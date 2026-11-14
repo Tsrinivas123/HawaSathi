@@ -8,9 +8,9 @@ import {
   GraduationCap,
   Cpu,
   RefreshCw,
-  Bell,
 } from 'lucide-react';
 import { StakeholderType, Language } from '@/lib/types';
+import { getTranslation } from '@/lib/i18n';
 
 interface TopNavProps {
   stakeholder: StakeholderType;
@@ -34,9 +34,9 @@ export const TopNav: React.FC<TopNavProps> = ({
   recordCount,
 }) => {
   const stakeholderLabels: Record<StakeholderType, { name: string; icon: any; color: string }> = {
-    ward_officer: { name: 'Ward Officer (ULB)', icon: ShieldCheck, color: 'text-blue-500' },
-    housing_society: { name: 'Housing Society (RWA)', icon: Building2, color: 'text-amber-500' },
-    school_admin: { name: 'School Administrator', icon: GraduationCap, color: 'text-emerald-500' },
+    ward_officer: { name: getTranslation(language, 'wardOfficer', 'Ward Officer (ULB)'), icon: ShieldCheck, color: 'text-blue-500' },
+    housing_society: { name: getTranslation(language, 'housingSociety', 'Housing Society (RWA)'), icon: Building2, color: 'text-amber-500' },
+    school_admin: { name: getTranslation(language, 'schoolAdmin', 'School Administrator'), icon: GraduationCap, color: 'text-emerald-500' },
   };
 
   const CurrentIcon = stakeholderLabels[stakeholder].icon;
@@ -56,16 +56,16 @@ export const TopNav: React.FC<TopNavProps> = ({
             onChange={(e) => setStakeholder(e.target.value as StakeholderType)}
             className="text-xs bg-transparent text-slate-600 focus:outline-hidden font-medium cursor-pointer"
           >
-            <option value="ward_officer">Ward Officer</option>
-            <option value="housing_society">Housing Society</option>
-            <option value="school_admin">School Admin</option>
+            <option value="ward_officer">{getTranslation(language, 'wardOfficer', 'Ward Officer')}</option>
+            <option value="housing_society">{getTranslation(language, 'housingSociety', 'Housing Society')}</option>
+            <option value="school_admin">{getTranslation(language, 'schoolAdmin', 'School Admin')}</option>
           </select>
         </div>
 
         {hasData && (
           <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>{recordCount} Records Active</span>
+            <span>{recordCount} {getTranslation(language, 'recordsActive', 'Records Active')}</span>
           </span>
         )}
       </div>
@@ -85,9 +85,9 @@ export const TopNav: React.FC<TopNavProps> = ({
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as Language)}
-            className="bg-transparent focus:outline-hidden cursor-pointer"
+            className="bg-transparent focus:outline-hidden cursor-pointer font-bold"
           >
-            <option value="en">English</option>
+            <option value="en">English (US)</option>
             <option value="hi">हिंदी (Hindi)</option>
             <option value="hinglish">Hinglish</option>
           </select>
@@ -108,12 +108,12 @@ export const TopNav: React.FC<TopNavProps> = ({
           {isAnalyzing ? (
             <>
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>Analyzing Air Data...</span>
+              <span>{getTranslation(language, 'analyzingData', 'Analyzing Air Data...')}</span>
             </>
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Generate AI Briefing</span>
+              <span>{getTranslation(language, 'generateBriefing', 'Generate AI Briefing')}</span>
             </>
           )}
         </button>

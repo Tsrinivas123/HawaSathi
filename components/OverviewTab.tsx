@@ -15,7 +15,8 @@ import {
   MapPin,
   Clock,
 } from 'lucide-react';
-import { AnalysisResult, StakeholderType, AirRecord, DataQualityReport } from '@/lib/types';
+import { AnalysisResult, StakeholderType, AirRecord, DataQualityReport, Language } from '@/lib/types';
+import { getTranslation } from '@/lib/i18n';
 
 interface OverviewTabProps {
   analysis: AnalysisResult | null;
@@ -25,6 +26,7 @@ interface OverviewTabProps {
   setActiveTab: (tab: string) => void;
   onOpenTrace: (recordId: string) => void;
   onLoadSample: () => void;
+  language: Language;
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -35,6 +37,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   setActiveTab,
   onOpenTrace,
   onLoadSample,
+  language,
 }) => {
   const avgAqi = analysis?.averageAqi || 215;
   const aqiCategory = analysis?.overallAqiCategory || 'Poor';
@@ -129,7 +132,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         {/* City AQI KPI */}
         <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
-            <span>Citywide Average AQI</span>
+            <span>{getTranslation(language, 'citywideAqi', 'Citywide Average AQI')}</span>
             <span
               className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getAqiBadgeColor(
                 aqiCategory
@@ -142,7 +145,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <span className="text-3xl font-extrabold text-navy-900 tracking-tight">
               {avgAqi}
             </span>
-            <span className="text-xs text-slate-400 font-mono">CPCB Scale</span>
+            <span className="text-xs text-slate-400 font-mono">{getTranslation(language, 'cpcbScale', 'CPCB Scale')}</span>
           </div>
           <div className="mt-3 flex items-center text-xs text-slate-600">
             {analysis?.comparison.aqiDelta && analysis.comparison.aqiDelta > 0 ? (
@@ -156,46 +159,46 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 {analysis?.comparison.aqiDelta || -8} pts
               </span>
             )}
-            <span className="text-slate-400 text-[11px]">vs 24h baseline</span>
+            <span className="text-slate-400 text-[11px]">{getTranslation(language, 'vsBaseline', 'vs 24h baseline')}</span>
           </div>
         </div>
 
         {/* Primary Pollutant */}
         <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs font-medium text-slate-500 mb-2">Primary Pollutant Burden</div>
+          <div className="text-xs font-medium text-slate-500 mb-2">{getTranslation(language, 'primaryPollutant', 'Primary Pollutant Burden')}</div>
           <div className="text-xl font-bold text-navy-900 truncate">
             {analysis?.primaryPollutant || 'PM2.5 & PM10'}
           </div>
           <div className="mt-3 text-xs text-slate-500 flex items-center space-x-1.5">
             <Wind className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Fine Inhalable Respirable Particles</span>
+            <span>{getTranslation(language, 'fineParticles', 'Fine Inhalable Respirable Particles')}</span>
           </div>
         </div>
 
         {/* Hotspots Count */}
         <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs font-medium text-slate-500 mb-2">Active High-Pollution Nodes</div>
+          <div className="text-xs font-medium text-slate-500 mb-2">{getTranslation(language, 'activeHotspots', 'Active High-Pollution Nodes')}</div>
           <div className="text-3xl font-extrabold text-navy-900">
             {analysis?.hotspots.length || 3}
           </div>
           <div className="mt-3 text-xs text-amber-700 font-medium flex items-center space-x-1">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-            <span>Exceeds WHO 24h Ambient Standard</span>
+            <span>{getTranslation(language, 'exceedsWho', 'Exceeds WHO 24h Ambient Standard')}</span>
           </div>
         </div>
 
         {/* Data Quality Completeness */}
         <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs font-medium text-slate-500 mb-2">Dataset Completeness</div>
+          <div className="text-xs font-medium text-slate-500 mb-2">{getTranslation(language, 'dataCompleteness', 'Dataset Completeness')}</div>
           <div className="flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-navy-900">
               {qualityReport?.dataCompletenessPct ?? 90}%
             </span>
-            <span className="text-xs text-emerald-600 font-medium">Audit Passed</span>
+            <span className="text-xs text-emerald-600 font-medium">{getTranslation(language, 'auditPassed', 'Audit Passed')}</span>
           </div>
           <div className="mt-3 text-xs text-slate-500 flex items-center justify-between">
-            <span>{records.length} Records Ingested</span>
-            <span className="text-[11px] font-mono text-slate-400">100% Traceable</span>
+            <span>{records.length} {getTranslation(language, 'recordsActive', 'Records Ingested')}</span>
+            <span className="text-[11px] font-mono text-slate-400">{getTranslation(language, 'traceableRecords', '100% Traceable')}</span>
           </div>
         </div>
       </div>

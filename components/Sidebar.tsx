@@ -13,13 +13,15 @@ import {
   Building2,
   GraduationCap,
 } from 'lucide-react';
-import { StakeholderType } from '@/lib/types';
+import { StakeholderType, Language } from '@/lib/types';
+import { getTranslation } from '@/lib/i18n';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   stakeholder: StakeholderType;
   setStakeholder: (s: StakeholderType) => void;
+  language: Language;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,15 +29,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   stakeholder,
   setStakeholder,
+  language,
 }) => {
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'data_studio', label: 'Data Studio', icon: Database },
-    { id: 'intelligence', label: 'Air Intelligence', icon: Sparkles },
-    { id: 'actions', label: 'Local Actions', icon: ClipboardCheck },
-    { id: 'advisory', label: 'Citizen Advisory', icon: Megaphone },
-    { id: 'history', label: 'Report History', icon: History },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'overview', label: getTranslation(language, 'overview', 'Overview'), icon: LayoutDashboard },
+    { id: 'data_studio', label: getTranslation(language, 'data_studio', 'Data Studio'), icon: Database },
+    { id: 'intelligence', label: getTranslation(language, 'intelligence', 'Air Intelligence'), icon: Sparkles },
+    { id: 'actions', label: getTranslation(language, 'actions', 'Local Actions'), icon: ClipboardCheck },
+    { id: 'advisory', label: getTranslation(language, 'advisory', 'Citizen Advisory'), icon: Megaphone },
+    { id: 'history', label: getTranslation(language, 'history', 'Report History'), icon: History },
+    { id: 'settings', label: getTranslation(language, 'settings', 'Settings'), icon: Settings },
   ];
 
   return (
@@ -48,12 +51,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
-              <span className="font-bold text-white tracking-tight text-lg">HawaSathi</span>
+              <span className="font-bold text-white tracking-tight text-lg">
+                {language === 'hi' ? 'हवासार्थी' : 'HawaSathi'}
+              </span>
               <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono font-semibold">
                 v1.0
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">Air Data to Local Action</p>
+            <p className="text-[11px] text-slate-400 font-medium">
+              {getTranslation(language, 'tagline', 'Air Data to Local Action')}
+            </p>
           </div>
         </div>
       </div>
@@ -61,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Stakeholder Persona Box */}
       <div className="p-4 mx-3 my-3 rounded-xl bg-slate-900/90 border border-slate-800">
         <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 flex items-center justify-between">
-          <span>Active Stakeholder</span>
+          <span>{getTranslation(language, 'activeStakeholder', 'Active Stakeholder')}</span>
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -74,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Ward Officer (ULB)</span>
+            <span className="truncate">{getTranslation(language, 'wardOfficer', 'Ward Officer (ULB)')}</span>
           </button>
           <button
             onClick={() => setStakeholder('housing_society')}
@@ -85,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <Building2 className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Housing Society (RWA)</span>
+            <span className="truncate">{getTranslation(language, 'housingSociety', 'Housing Society (RWA)')}</span>
           </button>
           <button
             onClick={() => setStakeholder('school_admin')}
@@ -96,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">School Administrator</span>
+            <span className="truncate">{getTranslation(language, 'schoolAdmin', 'School Administrator')}</span>
           </button>
         </div>
       </div>
@@ -104,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Navigation List */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 px-3 py-1.5">
-          Studio Navigation
+          {getTranslation(language, 'studioNavigation', 'Studio Navigation')}
         </div>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -132,7 +139,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="font-semibold text-slate-300">PromptWars 2026</span>
           <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Bhopal</span>
         </div>
-        <p className="text-slate-400 leading-tight">AI Civic Environmental Intelligence Suite</p>
+        <p className="text-slate-400 leading-tight">
+          {language === 'hi' ? 'एआई पर्यावरण बुद्धिमत्ता प्रणाली' : 'AI Civic Environmental Intelligence Suite'}
+        </p>
       </div>
     </aside>
   );

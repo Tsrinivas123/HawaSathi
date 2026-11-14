@@ -31,11 +31,13 @@ export const CitizenAdvisoryTab: React.FC<CitizenAdvisoryTabProps> = ({
   const [readingLevel, setReadingLevel] = useState<ReadingLevel>('citizen');
   const [copied, setCopied] = useState(false);
 
-  // Look up advisory or fallback to citizen
+  // Look up advisory strictly matching chosen language first
   const key = `${language}_${readingLevel}`;
   const advisory =
     analysis?.advisories[key] ||
     analysis?.advisories[`${language}_citizen`] ||
+    analysis?.advisories[`${language}_child`] ||
+    analysis?.advisories[`${language}_official`] ||
     analysis?.advisories['en_citizen'];
 
   const handleCopyWhatsApp = () => {
