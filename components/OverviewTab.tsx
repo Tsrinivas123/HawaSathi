@@ -1,5 +1,11 @@
 'use strict';
-import React, { useState } from 'react';
+/**
+ * @file OverviewTab.tsx
+ * @description Main dashboard overview with 3-step workflow guide, CPCB gauge, and stakeholder directives.
+ * Optimized with DRY utility color classes and React.memo.
+ */
+
+import React, { useState, memo } from 'react';
 import {
   Wind,
   AlertTriangle,
@@ -10,19 +16,17 @@ import {
   GraduationCap,
   Sparkles,
   ChevronRight,
-  Database,
   MapPin,
   Clock,
-  CheckCircle2,
-  HelpCircle,
   X,
   FileCheck2,
-  Layers,
   ArrowRight,
   Share2,
 } from 'lucide-react';
 import { AnalysisResult, StakeholderType, AirRecord, DataQualityReport, Language } from '@/lib/types';
 import { getTranslation } from '@/lib/i18n';
+import { getAqiBadgeClasses } from '@/lib/utils';
+import { SYSTEM_LIMITS } from '@/lib/constants';
 
 interface OverviewTabProps {
   analysis: AnalysisResult | null;
@@ -35,38 +39,19 @@ interface OverviewTabProps {
   language: Language;
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({
+const OverviewTabComponent: React.FC<OverviewTabProps> = ({
   analysis,
   records,
   qualityReport,
   stakeholder,
   setActiveTab,
   onOpenTrace,
-  onLoadSample,
   language,
 }) => {
   const [showHowItWorks, setShowHowItWorks] = useState(true);
 
-  const avgAqi = analysis?.averageAqi || 241;
+  const avgAqi = analysis?.averageAqi || SYSTEM_LIMITS.BASELINE_HISTORICAL_AQI;
   const aqiCategory = analysis?.overallAqiCategory || 'Very Poor';
-
-  const getAqiBadgeColor = (category: string) => {
-    switch (category) {
-      case 'Good':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-300';
-      case 'Moderate':
-        return 'bg-amber-50 text-amber-700 border-amber-300';
-      case 'Poor':
-        return 'bg-orange-50 text-orange-700 border-orange-300';
-      case 'Very Poor':
-        return 'bg-red-50 text-red-700 border-red-300';
-      case 'Severe':
-      case 'Hazardous':
-        return 'bg-purple-50 text-purple-700 border-purple-300';
-      default:
-        return 'bg-slate-50 text-slate-700 border-slate-300';
-    }
-  };
 
   const getStakeholderHero = () => {
     if (stakeholder === 'ward_officer') {
@@ -124,7 +109,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               type="button"
               onClick={() => setShowHowItWorks(false)}
               aria-label="Dismiss Workflow Guide"
-              className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors"
+              className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -244,7 +229,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 <span className="text-xs font-normal text-slate-400">/ 500</span>
               </div>
             </div>
-            <div className={`px-3 py-1.5 rounded-xl border text-xs font-bold text-center ${getAqiBadgeColor(aqiCategory)}`}>
+            <div className={`px-3 py-1.5 rounded-xl border text-xs font-bold text-center ${getAqiBadgeClasses(aqiCategory)}`}>
               <div className="text-xs">{aqiCategory}</div>
               <div className="text-[10px] font-normal opacity-80">CPCB Standard</div>
             </div>
@@ -257,7 +242,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <span>0 Good (अच्छा)</span>
             <span>100 Moderate (मध्यम)</span>
             <span>200 Poor (खराब)</span>
-            <span className="text-red-600 font-bold">▲ Current: 241 (Very Poor)</span>
+            <span className="text-red-600 font-bold">▲ Current: {avgAqi} ({aqiCategory})</span>
             <span>300 Severe (गंभीर)</span>
             <span>500 Hazardous</span>
           </div>
@@ -319,7 +304,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <div className="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
             <span>{getTranslation(language, 'citywideAqi', 'Citywide Average AQI')}</span>
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getAqiBadgeColor(aqiCategory)}`}>
+            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${getAqiBadgeClasses(aqiCategory)}`}>
               {aqiCategory}
             </span>
           </div>
@@ -441,7 +426,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               type="button"
               onClick={() => setActiveTab('intelligence')}
               aria-label="View Full AI Analysis"
-              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center space-x-1"
+              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center space-x-1 cursor-pointer"
             >
               <span>{language === 'hi' ? 'विस्तार से देखें' : 'View Full Studio'}</span>
               <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -545,3 +530,5 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     </div>
   );
 };
+
+export const OverviewTab = memo(OverviewTabComponent);

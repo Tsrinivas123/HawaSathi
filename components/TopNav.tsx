@@ -1,5 +1,11 @@
 'use strict';
-import React from 'react';
+/**
+ * @file TopNav.tsx
+ * @description Header bar with persona switching, multilingual selector, and AI trigger.
+ * Wrapped in React.memo for high rendering efficiency.
+ */
+
+import React, { memo } from 'react';
 import {
   Globe,
   Sparkles,
@@ -9,7 +15,6 @@ import {
   Cpu,
   RefreshCw,
   HelpCircle,
-  Activity,
 } from 'lucide-react';
 import { StakeholderType, Language } from '@/lib/types';
 import { getTranslation } from '@/lib/i18n';
@@ -26,7 +31,7 @@ interface TopNavProps {
   onToggleGuide?: () => void;
 }
 
-export const TopNav: React.FC<TopNavProps> = ({
+const TopNavComponent: React.FC<TopNavProps> = ({
   stakeholder,
   setStakeholder,
   language,
@@ -170,3 +175,5 @@ export const TopNav: React.FC<TopNavProps> = ({
     </header>
   );
 };
+
+export const TopNav = memo(TopNavComponent);

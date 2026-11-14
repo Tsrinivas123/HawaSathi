@@ -1,5 +1,11 @@
 'use strict';
-import React, { useState } from 'react';
+/**
+ * @file CitizenAdvisoryTab.tsx
+ * @description Multilingual public bulletins, WhatsApp broadcast generator, and official briefing notes.
+ * Optimized with React.memo and clean clipboard handlers.
+ */
+
+import React, { useState, memo } from 'react';
 import {
   Megaphone,
   Globe,
@@ -13,9 +19,9 @@ import {
   Check,
   Share2,
   Printer,
-  Sparkles,
 } from 'lucide-react';
 import { AnalysisResult, Language, ReadingLevel } from '@/lib/types';
+import { SYSTEM_LIMITS } from '@/lib/constants';
 
 interface CitizenAdvisoryTabProps {
   analysis: AnalysisResult | null;
@@ -23,7 +29,7 @@ interface CitizenAdvisoryTabProps {
   setLanguage: (lang: Language) => void;
 }
 
-export const CitizenAdvisoryTab: React.FC<CitizenAdvisoryTabProps> = ({
+const CitizenAdvisoryTabComponent: React.FC<CitizenAdvisoryTabProps> = ({
   analysis,
   language,
   setLanguage,
@@ -55,7 +61,7 @@ export const CitizenAdvisoryTab: React.FC<CitizenAdvisoryTabProps> = ({
   const handleDownloadBriefingNote = () => {
     if (!advisory || !analysis) return;
     const dateStr = new Date().toLocaleString();
-    const memo = `===============================================================
+    const memoText = `===============================================================
 OFFICIAL CIVIC AIR QUALITY INTERNAL BRIEFING MEMO
 ===============================================================
 MUNICIPAL WARD & CIVIC INTELLIGENCE DIVISION
@@ -90,7 +96,7 @@ ${advisory.vulnerablePrecautions.map(p => `* ${p.group}: ${p.precaution}`).join(
 
 5. COMPARATIVE DELTA AUDIT (vs 24h Baseline)
 ---------------------------------------------------------------
-Previous Baseline AQI: 211
+Previous Baseline AQI: ${SYSTEM_LIMITS.BASELINE_HISTORICAL_AQI}
 Net Atmospheric Shift: ${analysis.comparison.aqiDelta > 0 ? '+' : ''}${analysis.comparison.aqiDelta} AQI Points
 Trend: ${analysis.comparison.aqiTrend.toUpperCase()}
 Intervention Efficacy: ${analysis.comparison.interventionEffectiveness}
@@ -99,7 +105,7 @@ Intervention Efficacy: ${analysis.comparison.interventionEffectiveness}
 ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
 ===============================================================`;
 
-    const blob = new Blob([memo], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([memoText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -328,7 +334,7 @@ ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
             <div className="p-4 rounded-xl bg-red-50/30 border border-red-200 space-y-2">
               <div className="flex items-center space-x-2 text-xs font-bold text-red-800 uppercase tracking-wider">
                 <XCircle className="w-4 h-4 text-red-600" aria-hidden="true" />
-                <span>Practices to Avoid (DON'Ts)</span>
+                <span>Practices to Avoid (DON&apos;Ts)</span>
               </div>
               <ul className="text-xs text-red-900 space-y-1.5">
                 {advisory.dosAndDonts.donts.map((d, i) => (
@@ -345,3 +351,5 @@ ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
     </div>
   );
 };
+
+export const CitizenAdvisoryTab = memo(CitizenAdvisoryTabComponent);

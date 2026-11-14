@@ -1,5 +1,11 @@
 'use strict';
-import React from 'react';
+/**
+ * @file Sidebar.tsx
+ * @description Persistent sidebar navigation for the HawaSathi Civic Studio.
+ * Wrapped in React.memo to prevent unnecessary re-renders when active tab content updates.
+ */
+
+import React, { memo } from 'react';
 import {
   LayoutDashboard,
   Database,
@@ -24,7 +30,7 @@ interface SidebarProps {
   language: Language;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
+const SidebarComponent: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   stakeholder,
@@ -218,3 +224,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
+
+export const Sidebar = memo(SidebarComponent);

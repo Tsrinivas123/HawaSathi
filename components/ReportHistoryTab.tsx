@@ -1,7 +1,12 @@
 'use strict';
-import React from 'react';
+/**
+ * @file ReportHistoryTab.tsx
+ * @description Requirement 8 comparative delta studio between current briefing and T-24h baseline.
+ * Optimized with React.memo and clean numeric formatting.
+ */
+
+import React, { memo } from 'react';
 import {
-  History,
   GitCompare,
   ArrowUpRight,
   ArrowDownRight,
@@ -14,14 +19,15 @@ import {
 } from 'lucide-react';
 import { AnalysisResult } from '@/lib/types';
 import { PREVIOUS_BRIEFING_RECORD } from '@/lib/sampleData';
+import { SYSTEM_LIMITS } from '@/lib/constants';
 
 interface ReportHistoryTabProps {
   analysis: AnalysisResult | null;
 }
 
-export const ReportHistoryTab: React.FC<ReportHistoryTabProps> = ({ analysis }) => {
+const ReportHistoryTabComponent: React.FC<ReportHistoryTabProps> = ({ analysis }) => {
   const comparison = analysis?.comparison;
-  const avgAqi = analysis?.averageAqi || 241;
+  const avgAqi = analysis?.averageAqi || SYSTEM_LIMITS.BASELINE_HISTORICAL_AQI;
   const delta = comparison ? comparison.aqiDelta : avgAqi - PREVIOUS_BRIEFING_RECORD.averageAqi;
   const isWorse = delta > 0;
 
@@ -177,7 +183,7 @@ export const ReportHistoryTab: React.FC<ReportHistoryTabProps> = ({ analysis }) 
           <div className="space-y-3 text-xs">
             <div>
               <span className="font-semibold text-slate-800 block mb-1">
-                Efficacy of Yesterday's Implemented Actions:
+                Efficacy of Yesterday&apos;s Implemented Actions:
               </span>
               <p className="text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                 {comparison?.interventionEffectiveness ||
@@ -200,3 +206,5 @@ export const ReportHistoryTab: React.FC<ReportHistoryTabProps> = ({ analysis }) 
     </div>
   );
 };
+
+export const ReportHistoryTab = memo(ReportHistoryTabComponent);

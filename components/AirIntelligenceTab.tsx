@@ -1,14 +1,18 @@
 'use strict';
-import React from 'react';
+/**
+ * @file AirIntelligenceTab.tsx
+ * @description AI-driven environmental intelligence, station charts, and 100% traceable hotspot diagnostics.
+ * Optimized with chart data memoization and React.memo.
+ */
+
+import React, { useMemo, memo } from 'react';
 import {
   Sparkles,
   MapPin,
   TrendingUp,
   TrendingDown,
   Activity,
-  AlertTriangle,
   ShieldAlert,
-  Info,
   Clock,
   CheckCircle2,
   FileCheck2,
@@ -26,6 +30,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { AnalysisResult, AirRecord } from '@/lib/types';
+import { CPCB_THRESHOLDS } from '@/lib/constants';
 
 interface AirIntelligenceTabProps {
   analysis: AnalysisResult | null;
@@ -35,13 +40,27 @@ interface AirIntelligenceTabProps {
   isAnalyzing: boolean;
 }
 
-export const AirIntelligenceTab: React.FC<AirIntelligenceTabProps> = ({
+const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
   analysis,
   records,
   onOpenTrace,
   onRunAnalysis,
   isAnalyzing,
 }) => {
+  // Memoize chart data generation to prevent re-computation on parent re-renders
+  const chartData = useMemo(() => {
+    return records
+      .filter((r) => r.pm25 !== null || r.aqi !== null)
+      .slice(0, 8)
+      .map((r) => ({
+        name: r.location.split(' ')[0],
+        fullName: r.location,
+        pm25: r.pm25 || 0,
+        pm10: r.pm10 || 0,
+        aqi: r.aqi || 0,
+      }));
+  }, [records]);
+
   if (!analysis) {
     return (
       <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
@@ -62,18 +81,6 @@ export const AirIntelligenceTab: React.FC<AirIntelligenceTabProps> = ({
       </div>
     );
   }
-
-  // Chart data from records
-  const chartData = records
-    .filter((r) => r.pm25 !== null || r.aqi !== null)
-    .slice(0, 8)
-    .map((r) => ({
-      name: r.location.split(' ')[0],
-      fullName: r.location,
-      pm25: r.pm25 || 0,
-      pm10: r.pm10 || 0,
-      aqi: r.aqi || 0,
-    }));
 
   return (
     <div className="space-y-6">
@@ -136,7 +143,7 @@ export const AirIntelligenceTab: React.FC<AirIntelligenceTabProps> = ({
               Station-Wise Particulate Loading vs CPCB Safe Thresholds
             </h3>
           </div>
-          <span className="text-xs text-slate-500 font-mono">CPCB Limit: 60 µg/m³ PM2.5</span>
+          <span className="text-xs text-slate-500 font-mono">CPCB Limit: {CPCB_THRESHOLDS.PM25_24H_SAFE} µg/m³ PM2.5</span>
         </div>
 
         <div className="h-64 w-full" aria-label="Bar chart showing PM2.5 and PM10 concentrations across monitored stations">
@@ -150,7 +157,7 @@ export const AirIntelligenceTab: React.FC<AirIntelligenceTabProps> = ({
                 labelFormatter={(val, items) => items?.[0]?.payload?.fullName || val}
               />
               <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-              <ReferenceLine y={60} stroke="#EF4444" strokeDasharray="4 4" label={{ value: 'Safe 60 µg/m³', fill: '#EF4444', fontSize: 10 }} />
+              <ReferenceLine y={CPCB_THRESHOLDS.PM25_24H_SAFE} stroke="#EF4444" strokeDasharray="4 4" label={{ value: `Safe ${CPCB_THRESHOLDS.PM25_24H_SAFE} µg/m³`, fill: '#EF4444', fontSize: 10 }} />
               <Bar dataKey="pm25" name="PM2.5 (µg/m³)" fill="#10B981" radius={[6, 6, 0, 0]} />
               <Bar dataKey="pm10" name="PM10 (µg/m³)" fill="#3B82F6" radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -300,3 +307,5 @@ export const AirIntelligenceTab: React.FC<AirIntelligenceTabProps> = ({
     </div>
   );
 };
+
+export const AirIntelligenceTab = memo(AirIntelligenceTabComponent);

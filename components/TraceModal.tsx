@@ -1,14 +1,17 @@
 'use strict';
-import React from 'react';
+/**
+ * @file TraceModal.tsx
+ * @description Modal dialog for inspecting 100% verifiable raw sensor telemetry and conversion logs.
+ * Wrapped in React.memo.
+ */
+
+import React, { memo } from 'react';
 import {
   X,
   FileCheck2,
   AlertTriangle,
   CheckCircle2,
-  MapPin,
   Clock,
-  Cpu,
-  Layers,
 } from 'lucide-react';
 import { AirRecord } from '@/lib/types';
 
@@ -17,7 +20,7 @@ interface TraceModalProps {
   onClose: () => void;
 }
 
-export const TraceModal: React.FC<TraceModalProps> = ({ record, onClose }) => {
+const TraceModalComponent: React.FC<TraceModalProps> = ({ record, onClose }) => {
   if (!record) return null;
 
   return (
@@ -67,7 +70,7 @@ export const TraceModal: React.FC<TraceModalProps> = ({ record, onClose }) => {
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400">Location</span>
               <div className="font-bold text-navy-900 text-xs mt-0.5">{record.location}</div>
-              <div className="text-[10px] text-slate-500 font-mono">Raw: "{record.rawLocation}"</div>
+              <div className="text-[10px] text-slate-500 font-mono">Raw: &quot;{record.rawLocation}&quot;</div>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400">Ward & Station</span>
@@ -184,3 +187,5 @@ export const TraceModal: React.FC<TraceModalProps> = ({ record, onClose }) => {
     </div>
   );
 };
+
+export const TraceModal = memo(TraceModalComponent);

@@ -8,6 +8,8 @@ import {
   BriefingComparison,
 } from './types';
 import { PREVIOUS_BRIEFING_RECORD } from './sampleData';
+import { getAqiCategory } from './utils';
+import { AQI_BREAKPOINTS, SYSTEM_LIMITS } from './constants';
 
 const GEMINI_MODELS = [
   'gemini-3.5-flash-lite',
@@ -24,21 +26,15 @@ export async function runCivicAirIntelligence(
   const validRecords = records.filter((r) => r.aqi !== null);
   const avgAqi = validRecords.length > 0
     ? Math.round(validRecords.reduce((acc, r) => acc + (r.aqi || 0), 0) / validRecords.length)
-    : 150;
+    : SYSTEM_LIMITS.BASELINE_HISTORICAL_AQI;
 
-  let overallAqiCategory: AnalysisResult['overallAqiCategory'] = 'Moderate';
-  if (avgAqi <= 50) overallAqiCategory = 'Good';
-  else if (avgAqi <= 100) overallAqiCategory = 'Moderate';
-  else if (avgAqi <= 200) overallAqiCategory = 'Poor';
-  else if (avgAqi <= 300) overallAqiCategory = 'Very Poor';
-  else if (avgAqi <= 400) overallAqiCategory = 'Severe';
-  else overallAqiCategory = 'Hazardous';
+  const rawCategory = getAqiCategory(avgAqi);
+  const overallAqiCategory: AnalysisResult['overallAqiCategory'] =
+    rawCategory === 'Unknown' ? 'Moderate' : (rawCategory as AnalysisResult['overallAqiCategory']);
 
   const validRecordIds = new Set(records.map((r) => r.id));
 
   if (apiKey) {
-    let lastError: string = '';
-
     for (const model of GEMINI_MODELS) {
       try {
         const prompt = `
@@ -205,7 +201,7 @@ Output raw JSON only.
           const data = await response.json();
           const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (rawContent) {
-            let parsed: any;
+            let parsed: Record<string, any>;
             try {
               parsed = JSON.parse(rawContent.trim());
             } catch (parseErr) {
@@ -234,6 +230,7 @@ Output raw JSON only.
             const mergedAdvisories = { ...defaultBase.advisories, ...(parsed.advisories || {}) };
 
             return {
+              ...defaultBase,
               ...parsed,
               advisories: mergedAdvisories,
               hotspots: validatedHotspots,
@@ -242,18 +239,11 @@ Output raw JSON only.
               aiModelUsed: model,
             };
           }
-        } else {
-          const errData = await response.json().catch(() => ({}));
-          lastError = errData?.error?.message || `HTTP ${response.status} from ${model}`;
-          console.warn(`[HawaSathi AI] Model ${model} returned error: ${lastError}`);
         }
-      } catch (err: any) {
-        lastError = err?.message || 'Network exception during Gemini fetch';
-        console.warn(`[HawaSathi AI] Model ${model} failed: ${lastError}`);
+      } catch (_err: unknown) {
+        // Fall through to next model candidate
       }
     }
-
-    console.error('[HawaSathi AI] All Gemini models failed. Last error:', lastError);
   }
 
   // Deterministic Fallback Engine (Transparently labeled as DEMO DATA / DETERMINISTIC MODE)
@@ -277,7 +267,7 @@ export function generateDeterministicIntelligence(
   overallAqiCategory: AnalysisResult['overallAqiCategory']
 ): AnalysisResult {
   const hotspots: HotspotFinding[] = records
-    .filter((r) => r.aqi && r.aqi >= 200)
+    .filter((r) => r.aqi && r.aqi >= AQI_BREAKPOINTS.POOR_MAX)
     .sort((a, b) => (b.aqi || 0) - (a.aqi || 0))
     .slice(0, 4)
     .map((r) => ({

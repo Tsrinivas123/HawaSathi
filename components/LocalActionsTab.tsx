@@ -1,18 +1,19 @@
 'use strict';
-import React, { useState, useMemo } from 'react';
+/**
+ * @file LocalActionsTab.tsx
+ * @description Local interventions and stakeholder action dispatch studio.
+ * Optimized with memoized filtering, typed action dispatches, and React.memo.
+ */
+
+import React, { useState, useMemo, memo } from 'react';
 import {
   ClipboardCheck,
   ShieldCheck,
   Building2,
   GraduationCap,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Printer,
   Copy,
   Check,
   MapPin,
-  FileCheck,
   PlusCircle,
   X,
 } from 'lucide-react';
@@ -25,7 +26,7 @@ interface LocalActionsTabProps {
   onCreateAction?: (action: StakeholderAction) => void;
 }
 
-export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
+const LocalActionsTabComponent: React.FC<LocalActionsTabProps> = ({
   actions,
   currentStakeholder,
   onUpdateActionStatus,
@@ -326,7 +327,7 @@ export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label htmlFor="target-stakeholder-select" className="block text-xs font-semibold text-slate-700 mb-1">
                     Target Stakeholder
@@ -350,12 +351,27 @@ export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
                   <select
                     id="action-priority-select"
                     value={newPriority}
-                    onChange={(e) => setNewPriority(e.target.value as any)}
+                    onChange={(e) => setNewPriority(e.target.value as 'High' | 'Medium' | 'Low')}
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:border-emerald-500"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="action-type-select" className="block text-xs font-semibold text-slate-700 mb-1">
+                    Action Classification
+                  </label>
+                  <select
+                    id="action-type-select"
+                    value={newType}
+                    onChange={(e) => setNewType(e.target.value as 'confirmed_action' | 'investigative_hypothesis')}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:border-emerald-500"
+                  >
+                    <option value="confirmed_action">Confirmed Action</option>
+                    <option value="investigative_hypothesis">Investigative Hypothesis</option>
                   </select>
                 </div>
               </div>
@@ -407,7 +423,7 @@ export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -425,3 +441,5 @@ export const LocalActionsTab: React.FC<LocalActionsTabProps> = ({
     </div>
   );
 };
+
+export const LocalActionsTab = memo(LocalActionsTabComponent);

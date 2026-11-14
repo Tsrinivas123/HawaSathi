@@ -1,24 +1,28 @@
 'use strict';
-import React, { useState, useMemo } from 'react';
+/**
+ * @file DataStudioTab.tsx
+ * @description Ingestion, normalizer telemetry audit, and searchable data grid.
+ * Optimized with search debouncing, memoized filtering, and DRY color helpers.
+ */
+
+import React, { useState, useMemo, memo } from 'react';
 import {
   Upload,
   FileSpreadsheet,
   AlertCircle,
   CheckCircle2,
   AlertTriangle,
-  RotateCcw,
   Sparkles,
   FileText,
   Search,
   Filter,
   Check,
-  HelpCircle,
   Eye,
-  ArrowRight,
-  ShieldCheck,
 } from 'lucide-react';
 import { AirRecord, DataQualityReport } from '@/lib/types';
 import { BHOPAL_MESSY_SAMPLE_CSV, CLEAN_BENCHMARK_CSV } from '@/lib/sampleData';
+import { useDebounce } from '@/hooks/useDebounce';
+import { getAqiBadgeClasses } from '@/lib/utils';
 
 interface DataStudioTabProps {
   records: AirRecord[];
@@ -27,7 +31,7 @@ interface DataStudioTabProps {
   onOpenTrace: (recordId: string) => void;
 }
 
-export const DataStudioTab: React.FC<DataStudioTabProps> = ({
+const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
   records,
   qualityReport,
   onDataParsed,
@@ -37,6 +41,9 @@ export const DataStudioTab: React.FC<DataStudioTabProps> = ({
   const [pastedText, setPastedText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'valid' | 'suspicious' | 'missing_critical'>('all');
+
+  // Debounce search query to prevent high-frequency table filtering on every keystroke
+  const debouncedSearch = useDebounce(searchQuery, 250);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,27 +63,19 @@ export const DataStudioTab: React.FC<DataStudioTabProps> = ({
     }
   };
 
-  // Performance efficiency: memoize filtered records
+  // Performance efficiency: memoize filtered records with debounced query
   const filteredRecords = useMemo(() => {
+    const q = debouncedSearch.toLowerCase().trim();
     return records.filter((r) => {
       const matchesSearch =
-        r.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.ward.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.id.toLowerCase().includes(searchQuery.toLowerCase());
+        q === '' ||
+        r.location.toLowerCase().includes(q) ||
+        r.ward.toLowerCase().includes(q) ||
+        r.id.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [records, searchQuery, statusFilter]);
-
-  const getAqiColor = (aqi: number | null) => {
-    if (aqi === null) return 'text-slate-400 bg-slate-100 border-slate-200';
-    if (aqi <= 50) return 'text-emerald-700 bg-emerald-50 border-emerald-300';
-    if (aqi <= 100) return 'text-lime-700 bg-lime-50 border-lime-300';
-    if (aqi <= 200) return 'text-amber-700 bg-amber-50 border-amber-300';
-    if (aqi <= 300) return 'text-orange-700 bg-orange-50 border-orange-300';
-    if (aqi <= 400) return 'text-red-700 bg-red-50 border-red-300';
-    return 'text-purple-700 bg-purple-50 border-purple-300';
-  };
+  }, [records, debouncedSearch, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -335,7 +334,7 @@ export const DataStudioTab: React.FC<DataStudioTabProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded-full font-mono text-[11px] font-bold border ${getAqiColor(rec.aqi)}`}>
+                    <span className={`px-2 py-0.5 rounded-full font-mono text-[11px] font-bold border ${getAqiBadgeClasses(rec.aqi)}`}>
                       {rec.aqi ?? 'N/A'}
                     </span>
                   </td>
@@ -382,3 +381,5 @@ export const DataStudioTab: React.FC<DataStudioTabProps> = ({
     </div>
   );
 };
+
+export const DataStudioTab = memo(DataStudioTabComponent);

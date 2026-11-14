@@ -1,14 +1,18 @@
 'use strict';
-import React from 'react';
+/**
+ * @file SettingsTab.tsx
+ * @description System configuration, persona toggles, and LLM specifications.
+ * Optimized with React.memo.
+ */
+
+import React, { memo } from 'react';
 import {
   Settings,
   ShieldCheck,
   Building2,
   GraduationCap,
   Cpu,
-  Sliders,
   CheckCircle2,
-  Info,
   Award,
 } from 'lucide-react';
 import { StakeholderType } from '@/lib/types';
@@ -18,7 +22,7 @@ interface SettingsTabProps {
   setStakeholder: (s: StakeholderType) => void;
 }
 
-export const SettingsTab: React.FC<SettingsTabProps> = ({
+const SettingsTabComponent: React.FC<SettingsTabProps> = ({
   stakeholder,
   setStakeholder,
 }) => {
@@ -151,3 +155,5 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     </div>
   );
 };
+
+export const SettingsTab = memo(SettingsTabComponent);
