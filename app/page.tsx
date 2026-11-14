@@ -152,7 +152,7 @@ export default function Home() {
         />
 
         {/* Tab Content Container */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main id="main-content" role="main" tabIndex={-1} className="flex-1 overflow-y-auto p-4 sm:p-6 outline-hidden">
           <div className="max-w-7xl mx-auto">
             {activeTab === 'overview' && (
               <OverviewTab
