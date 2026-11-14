@@ -111,15 +111,17 @@ const OverviewTabComponent: React.FC<OverviewTabProps> = ({
               aria-label="Dismiss Workflow Guide"
               className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             {/* Step 1 */}
-            <div
+            <button
+              type="button"
               onClick={() => setActiveTab('data_studio')}
-              className="p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-400 transition-all cursor-pointer group"
+              aria-label={language === 'hi' ? 'चरण 1: कच्चा डेटा अपलोड करें' : 'Step 1: Ingest Messy Telemetry'}
+              className="text-left p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer group"
             >
               <div className="flex items-center space-x-2.5 mb-1.5">
                 <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center font-mono">
@@ -136,14 +138,16 @@ const OverviewTabComponent: React.FC<OverviewTabProps> = ({
               </p>
               <div className="mt-2 text-[10px] font-semibold text-emerald-600 flex items-center space-x-1">
                 <span>{language === 'hi' ? 'डेटा स्टूडियो खोलें' : 'Open Data Studio'}</span>
-                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
               </div>
-            </div>
+            </button>
 
             {/* Step 2 */}
-            <div
+            <button
+              type="button"
               onClick={() => setActiveTab('intelligence')}
-              className="p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-400 transition-all cursor-pointer group"
+              aria-label={language === 'hi' ? 'चरण 2: जेमिनी एआई विश्लेषण' : 'Step 2: Gemini AI Hotspot Reasoning'}
+              className="text-left p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer group"
             >
               <div className="flex items-center space-x-2.5 mb-1.5">
                 <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-800 text-xs font-bold flex items-center justify-center font-mono">
@@ -160,14 +164,16 @@ const OverviewTabComponent: React.FC<OverviewTabProps> = ({
               </p>
               <div className="mt-2 text-[10px] font-semibold text-blue-600 flex items-center space-x-1">
                 <span>{language === 'hi' ? 'हॉटस्पॉट देखें' : 'View Hotspots'}</span>
-                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
               </div>
-            </div>
+            </button>
 
             {/* Step 3 */}
-            <div
+            <button
+              type="button"
               onClick={() => setActiveTab('advisory')}
-              className="p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-400 transition-all cursor-pointer group"
+              aria-label={language === 'hi' ? 'चरण 3: कार्रवाई और नागरिक परामर्श' : 'Step 3: Act and Inform Citizens'}
+              className="text-left p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer group"
             >
               <div className="flex items-center space-x-2.5 mb-1.5">
                 <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold flex items-center justify-center font-mono">
@@ -184,9 +190,9 @@ const OverviewTabComponent: React.FC<OverviewTabProps> = ({
               </p>
               <div className="mt-2 text-[10px] font-semibold text-amber-600 flex items-center space-x-1">
                 <span>{language === 'hi' ? 'नागरिक परामर्श' : 'View Advisories'}</span>
-                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
               </div>
-            </div>
+            </button>
           </div>
         </section>
       )}

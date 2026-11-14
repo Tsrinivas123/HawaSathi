@@ -217,11 +217,15 @@ export function parseAndNormalizeData(rawText: string): {
     const conversions: string[] = [];
     const flags: string[] = [];
 
-    const rawLoc = String(mapped.location || mapped.ward || mapped.station || `Zone-${index + 1}`).trim();
-    const location = rawLoc.replace(/^(Ward\s*\d+[\s:-]*)/i, '').trim() || rawLoc;
-    const ward = String(mapped.ward || (rawLoc.match(/Ward\s*\d+/i)?.[0] ?? 'General Ward')).trim();
-    const station = String(mapped.station || `Station-${(index % 4) + 1}`).trim();
-    const timestamp = String(mapped.timestamp || new Date().toISOString().replace('T', ' ').substring(0, 16)).trim();
+    // Sanitize text inputs against HTML tags, script injection, and control characters
+    const sanitizeText = (val: string): string =>
+      val.replace(/<[^>]*>?/gm, '').replace(/[\x00-\x1F\x7F]/g, '').trim();
+
+    const rawLoc = sanitizeText(String(mapped.location || mapped.ward || mapped.station || `Zone-${index + 1}`));
+    const location = sanitizeText(rawLoc.replace(/^(Ward\s*\d+[\s:-]*)/i, '') || rawLoc);
+    const ward = sanitizeText(String(mapped.ward || (rawLoc.match(/Ward\s*\d+/i)?.[0] ?? 'General Ward')));
+    const station = sanitizeText(String(mapped.station || `Station-${(index % 4) + 1}`));
+    const timestamp = sanitizeText(String(mapped.timestamp || new Date().toISOString().replace('T', ' ').substring(0, 16)));
 
     // Deduplication check
     const dedupKey = `${location.toLowerCase()}_${timestamp.toLowerCase()}`;

@@ -201,13 +201,13 @@ Output raw JSON only.
           const data = await response.json();
           const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (rawContent) {
-            let parsed: Record<string, any>;
+            let parsed: Partial<AnalysisResult>;
             try {
-              parsed = JSON.parse(rawContent.trim());
+              parsed = JSON.parse(rawContent.trim()) as Partial<AnalysisResult>;
             } catch (parseErr) {
               const lastBrace = rawContent.lastIndexOf('}');
               if (lastBrace > 0) {
-                parsed = JSON.parse(rawContent.substring(0, lastBrace + 1));
+                parsed = JSON.parse(rawContent.substring(0, lastBrace + 1)) as Partial<AnalysisResult>;
               } else {
                 throw parseErr;
               }

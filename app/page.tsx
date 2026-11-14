@@ -35,35 +35,35 @@ const TabLoadingSkeleton = ({ title }: { title: string }) => (
   </div>
 );
 
-// Code Splitting & Dynamic Lazy Loading of secondary studio tabs
+// Code Splitting & Dynamic Loading of secondary studio tabs (with SSR enabled for full WCAG AA accessibility audit)
 const DataStudioTab = dynamic(
   () => import('@/components/DataStudioTab').then((m) => m.DataStudioTab),
-  { loading: () => <TabLoadingSkeleton title="Data Studio" />, ssr: false }
+  { loading: () => <TabLoadingSkeleton title="Data Studio" /> }
 );
 
 const AirIntelligenceTab = dynamic(
   () => import('@/components/AirIntelligenceTab').then((m) => m.AirIntelligenceTab),
-  { loading: () => <TabLoadingSkeleton title="Air Intelligence" />, ssr: false }
+  { loading: () => <TabLoadingSkeleton title="Air Intelligence" /> }
 );
 
 const LocalActionsTab = dynamic(
   () => import('@/components/LocalActionsTab').then((m) => m.LocalActionsTab),
-  { loading: () => <TabLoadingSkeleton title="Local Actions" />, ssr: false }
+  { loading: () => <TabLoadingSkeleton title="Local Actions" /> }
 );
 
 const CitizenAdvisoryTab = dynamic(
   () => import('@/components/CitizenAdvisoryTab').then((m) => m.CitizenAdvisoryTab),
-  { loading: () => <TabLoadingSkeleton title="Citizen Advisory" />, ssr: false }
+  { loading: () => <TabLoadingSkeleton title="Citizen Advisory" /> }
 );
 
 const ReportHistoryTab = dynamic(
   () => import('@/components/ReportHistoryTab').then((m) => m.ReportHistoryTab),
-  { loading: () => <TabLoadingSkeleton title="Report History" />, ssr: false }
+  { loading: () => <TabLoadingSkeleton title="Report History" /> }
 );
 
 const SettingsTab = dynamic(
   () => import('@/components/SettingsTab').then((m) => m.SettingsTab),
-  { loading: () => <TabLoadingSkeleton title="Settings" />, ssr: false }
+  { loading: () => <TabLoadingSkeleton title="Settings" /> }
 );
 
 export default function Home() {

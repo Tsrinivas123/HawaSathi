@@ -42,7 +42,10 @@ const TopNavComponent: React.FC<TopNavProps> = ({
   recordCount,
   onToggleGuide,
 }) => {
-  const stakeholderLabels: Record<StakeholderType, { name: string; icon: any; color: string; badge: string }> = {
+  const stakeholderLabels: Record<
+    StakeholderType,
+    { name: string; icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>; color: string; badge: string }
+  > = {
     ward_officer: {
       name: getTranslation(language, 'wardOfficer', 'Ward Officer (ULB)'),
       icon: ShieldCheck,

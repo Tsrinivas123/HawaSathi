@@ -279,7 +279,7 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
             <select
               id="status-filter"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'valid' | 'suspicious' | 'missing_critical')}
               aria-label="Filter records by validity status"
               className="text-xs bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-slate-700 cursor-pointer"
             >
