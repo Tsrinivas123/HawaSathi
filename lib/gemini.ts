@@ -229,8 +229,13 @@ Output raw JSON only.
               };
             });
 
+            // Guarantee all 9 multilingual keys are populated
+            const defaultBase = generateDeterministicIntelligence(records, qualityReport, avgAqi, overallAqiCategory);
+            const mergedAdvisories = { ...defaultBase.advisories, ...(parsed.advisories || {}) };
+
             return {
               ...parsed,
+              advisories: mergedAdvisories,
               hotspots: validatedHotspots,
               timestamp: new Date().toISOString(),
               isAiGenerated: true,
