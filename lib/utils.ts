@@ -64,3 +64,38 @@ export function buildRecordLookupMap(records: readonly AirRecord[]): Map<string,
   }
   return map;
 }
+
+/**
+ * Neutralizes CSV formula injection (DDE attacks) for strings starting with =, +, -, @, \t, \r.
+ * Prepends a single quote to prevent spreadsheet applications from evaluating formulas.
+ */
+export function sanitizeCsvField(field: unknown): string {
+  if (field === null || field === undefined) return '';
+  const str = String(field);
+  if (/^[=+\-@\t\r]/.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
+
+/**
+ * Neutralizes formula injection across multi-line text exports and memos.
+ * Any line starting with a formula execution trigger (=, +, -, @) has its trigger escaped.
+ */
+export function sanitizeExportText(text: string): string {
+  if (!text) return '';
+  return text
+    .split('\n')
+    .map((line) => {
+      const trimmed = line.trimStart();
+      if (/^[=+\-@]/.test(trimmed)) {
+        // If line is purely a decorative separator (e.g. === or ---), preserve visual layout safely
+        if (/^={3,}$/.test(trimmed) || /^-{3,}$/.test(trimmed)) {
+          return line;
+        }
+        return `'${line}`;
+      }
+      return line;
+    })
+    .join('\n');
+}

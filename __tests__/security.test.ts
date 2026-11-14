@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SYSTEM_LIMITS, CPCB_THRESHOLDS } from '../lib/constants';
 import { parseAndNormalizeData } from '../lib/normalizer';
+import { sanitizeCsvField, sanitizeExportText } from '../lib/utils';
 
 describe('Security & Threat Protection Suite', () => {
   it('should enforce batch ingestion limits to prevent denial-of-service', () => {
@@ -37,5 +38,23 @@ describe('Security & Threat Protection Suite', () => {
 
     expect(records.length).toBe(1);
     expect(records[0].location.length).toBeLessThanOrEqual(255);
+  });
+
+  it('should neutralize CSV formula injection (DDE) characters', () => {
+    // Formula triggers: =, +, -, @, \t, \r
+    expect(sanitizeCsvField('=1+1')).toBe("'=1+1");
+    expect(sanitizeCsvField('+cmd|/c calc')).toBe("'+cmd|/c calc");
+    expect(sanitizeCsvField('-100')).toBe("'-100");
+    expect(sanitizeCsvField('@SUM(A1:A10)')).toBe("'@SUM(A1:A10)");
+    expect(sanitizeCsvField('\tpowershell')).toBe("'\tpowershell");
+    expect(sanitizeCsvField('Normal Text')).toBe('Normal Text');
+    expect(sanitizeCsvField(123)).toBe('123');
+
+    // Multi-line export sanitization
+    const dangerousText = `Header\n=cmd|calc\n+dangerous\nNormal Line`;
+    const sanitized = sanitizeExportText(dangerousText);
+    expect(sanitized).toContain("'=cmd|calc");
+    expect(sanitized).toContain("'+dangerous");
+    expect(sanitized).toContain('Normal Line');
   });
 });

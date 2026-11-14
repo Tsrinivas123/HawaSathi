@@ -1,10 +1,12 @@
 /**
  * @file route.ts
  * @description Secure server-side API endpoint for executing Gemini civic air intelligence.
- * Enforces rate limiting, input sanitization, in-memory response caching, and HTTP security headers.
+ * Enforces rate limiting, input sanitization, in-memory LRU cryptographic response caching,
+ * trusted origin enforcement, and strict HTTP security headers.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { runCivicAirIntelligence } from '@/lib/gemini';
 import { AirRecord, DataQualityReport, AnalysisResult } from '@/lib/types';
 import { SYSTEM_LIMITS } from '@/lib/constants';
@@ -26,11 +28,11 @@ export const maxDuration = 60;
  *    In a globally distributed multi-region cluster where incoming traffic is routed across multiple distinct
  *    stateless container instances or cold starts, in-memory state is isolated to each container and resets
  *    upon instance recycling. For enterprise distributed rate limiting across all worldwide edge nodes,
- *    a shared external store (e.g. Upstash Redis / Redis Cluster via `@upstash/ratelimit`) should be mounted
- *    using environment credentials (`UPSTASH_REDIS_REST_URL`).
+ *    a shared external store (e.g. Upstash Redis / Vercel KV via `@upstash/ratelimit`) should be mounted
+ *    using environment credentials (`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`).
  */
 
-// In-memory sliding window rate limiter (per-instance defense)
+// In-memory sliding window rate limiter with max capacity and automatic eviction
 interface RateLimitRecord {
   count: number;
   resetTime: number;
@@ -38,11 +40,28 @@ interface RateLimitRecord {
 const rateLimitMap = new Map<string, RateLimitRecord>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
 const MAX_REQUESTS_PER_WINDOW = 60; // 60 requests/min per IP
+const MAX_RATE_LIMIT_MAP_SIZE = 500; // Cap Map size to prevent memory exhaustion
 
-// High-efficiency in-memory response cache (LRU-style with max 50 items per instance)
+// High-efficiency in-memory LRU response cache keyed by cryptographic data hash
 const responseCache = new Map<string, { result: AnalysisResult; timestamp: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache TTL
 const MAX_CACHE_ENTRIES = 50;
+
+/**
+ * Derives the client IP safely from Vercel's trusted headers.
+ */
+function getClientIp(req: NextRequest): string {
+  const vercelRealIp = req.headers.get('x-real-ip');
+  if (vercelRealIp) return vercelRealIp.trim();
+
+  const vercelProxiedFor = req.headers.get('x-vercel-proxied-for');
+  if (vercelProxiedFor) return vercelProxiedFor.split(',')[0].trim();
+
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+
+  return '127.0.0.1';
+}
 
 /**
  * Sanitizes string inputs to prevent XSS and prompt injection
@@ -52,25 +71,40 @@ function sanitizeString(str: unknown): string {
   return str
     .replace(/[<>]/g, '') // Strip angle brackets
     .replace(/[\x00-\x1F\x7F]/g, '') // Strip control characters
-    .slice(0, 255); // Enforce length boundary
+    .slice(0, SYSTEM_LIMITS.MAX_FIELD_LENGTH); // Enforce length boundary
 }
 
 /**
- * Generates a deterministic hash key for input telemetry caching
+ * Generates a deterministic SHA-256 cryptographic hash key for telemetry data caching
  */
-function generateCacheKey(records: AirRecord[]): string {
-  const sample = records
-    .slice(0, 20)
-    .map((r) => `${r.id}:${r.location}:${r.aqi ?? ''}:${r.pm25 ?? ''}`)
-    .join('|');
-  return `hawa_cache_${records.length}_${sample}`;
+function generateDataHashKey(records: AirRecord[]): string {
+  const normalizedData = JSON.stringify(
+    records.map((r) => [r.id, r.location, r.aqi, r.pm25, r.pm10, r.status])
+  );
+  const hash = crypto.createHash('sha256').update(normalizedData).digest('hex');
+  return `hawa_sha256_${records.length}_${hash.slice(0, 32)}`;
 }
 
 /**
- * Check and apply rate limiting based on client IP
+ * Check and apply rate limiting based on client IP with Map size capping and eviction
  */
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
   const now = Date.now();
+
+  // Prune expired entries if Map size exceeds threshold
+  if (rateLimitMap.size >= MAX_RATE_LIMIT_MAP_SIZE) {
+    rateLimitMap.forEach((record, storedIp) => {
+      if (now > record.resetTime) {
+        rateLimitMap.delete(storedIp);
+      }
+    });
+    // If still over cap, evict oldest entry
+    if (rateLimitMap.size >= MAX_RATE_LIMIT_MAP_SIZE) {
+      const oldestIp = rateLimitMap.keys().next().value;
+      if (oldestIp) rateLimitMap.delete(oldestIp);
+    }
+  }
+
   const clientRecord = rateLimitMap.get(ip);
 
   if (!clientRecord || now > clientRecord.resetTime) {
@@ -93,16 +127,50 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
 }
 
 /**
+ * Enforces Origin and Referer validation to restrict CORS to authorized domains
+ */
+function validateOrigin(req: NextRequest): { isAllowed: boolean; allowedOrigin: string } {
+  const origin = req.headers.get('origin');
+  const referer = req.headers.get('referer');
+  const host = req.headers.get('host') || '';
+
+  // Direct requests without Origin/Referer (e.g. same-origin Next.js server actions or curl)
+  if (!origin && !referer) {
+    return { isAllowed: true, allowedOrigin: `https://${host || 'hawasathi.vercel.app'}` };
+  }
+
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+  const isVercel = host.includes('vercel.app') || (origin && origin.includes('vercel.app'));
+
+  let isAllowed = false;
+  if (origin) {
+    isAllowed = Boolean(origin.includes(host) || (isLocalhost && origin.includes('localhost')) || (isVercel && origin.includes('vercel.app')));
+  } else if (referer) {
+    isAllowed = Boolean(referer.includes(host) || (isLocalhost && referer.includes('localhost')) || (isVercel && referer.includes('vercel.app')));
+  }
+
+  const allowedOrigin = origin && isAllowed ? origin : `https://${host || 'hawasathi.vercel.app'}`;
+  return { isAllowed, allowedOrigin };
+}
+
+/**
  * OPTIONS handler for secure CORS preflight
  */
-export async function OPTIONS() {
+export async function OPTIONS(req: NextRequest) {
+  const { isAllowed, allowedOrigin } = validateOrigin(req);
+
+  if (!isAllowed) {
+    return new NextResponse(null, { status: 403 });
+  }
+
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
       'Access-Control-Max-Age': '86400',
+      'Vary': 'Origin',
     },
   });
 }
@@ -112,9 +180,17 @@ export async function OPTIONS() {
  */
 export async function POST(req: NextRequest) {
   try {
-    // 1. IP extraction & rate limiting check
-    const forwarded = req.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
+    // 1. Origin & Referer authorization check
+    const { isAllowed, allowedOrigin } = validateOrigin(req);
+    if (!isAllowed) {
+      return NextResponse.json(
+        { error: 'Forbidden: Request origin is not authorized.' },
+        { status: 403 }
+      );
+    }
+
+    // 2. Safe client IP extraction & rate limiting check
+    const ip = getClientIp(req);
     const rateLimit = checkRateLimit(ip);
 
     if (!rateLimit.allowed) {
@@ -126,17 +202,27 @@ export async function POST(req: NextRequest) {
             'Retry-After': '60',
             'X-RateLimit-Limit': String(MAX_REQUESTS_PER_WINDOW),
             'X-RateLimit-Remaining': '0',
+            'Access-Control-Allow-Origin': allowedOrigin,
           },
         }
       );
     }
 
-    // 2. Content-Type verification
+    // 3. Content-Type verification
     const contentType = req.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
       return NextResponse.json(
         { error: 'Invalid Content-Type. Expected application/json.' },
-        { status: 415 }
+        { status: 415, headers: { 'Access-Control-Allow-Origin': allowedOrigin } }
+      );
+    }
+
+    // 4. Request body size boundary verification
+    const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
+    if (contentLength > SYSTEM_LIMITS.MAX_PAYLOAD_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: `Payload too large. Request body exceeds ${SYSTEM_LIMITS.MAX_PAYLOAD_SIZE_BYTES} bytes limit.` },
+        { status: 413, headers: { 'Access-Control-Allow-Origin': allowedOrigin } }
       );
     }
 
@@ -146,22 +232,22 @@ export async function POST(req: NextRequest) {
       qualityReport: DataQualityReport;
     };
 
-    // 3. Strict input validation
+    // 5. Strict input record validation
     if (!records || !Array.isArray(records) || records.length === 0) {
       return NextResponse.json(
         { error: 'No records provided for analysis.' },
-        { status: 400 }
+        { status: 400, headers: { 'Access-Control-Allow-Origin': allowedOrigin } }
       );
     }
 
     if (records.length > SYSTEM_LIMITS.MAX_INGESTION_RECORDS) {
       return NextResponse.json(
         { error: `Batch size exceeded. Maximum allowed records is ${SYSTEM_LIMITS.MAX_INGESTION_RECORDS}.` },
-        { status: 413 }
+        { status: 413, headers: { 'Access-Control-Allow-Origin': allowedOrigin } }
       );
     }
 
-    // 4. Sanitize records strings
+    // 6. Deep input sanitization
     const sanitizedRecords = records.map((r) => ({
       ...r,
       location: sanitizeString(r.location),
@@ -169,38 +255,49 @@ export async function POST(req: NextRequest) {
       rawLocation: sanitizeString(r.rawLocation),
     }));
 
-    // 5. Check in-memory efficiency cache
-    const cacheKey = generateCacheKey(sanitizedRecords);
+    // 7. Check in-memory cryptographic LRU cache
+    const cacheKey = generateDataHashKey(sanitizedRecords);
     const cached = responseCache.get(cacheKey);
     const now = Date.now();
 
-    if (cached && now - cached.timestamp < CACHE_TTL_MS) {
-      const cachedResponse = NextResponse.json(cached.result);
-      cachedResponse.headers.set('X-Cache-Status', 'HIT');
-      cachedResponse.headers.set('X-Content-Type-Options', 'nosniff');
-      cachedResponse.headers.set('X-RateLimit-Limit', String(MAX_REQUESTS_PER_WINDOW));
-      cachedResponse.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
-      return cachedResponse;
+    if (cached) {
+      if (now - cached.timestamp < CACHE_TTL_MS) {
+        // Move to most recently used position
+        responseCache.delete(cacheKey);
+        responseCache.set(cacheKey, { result: cached.result, timestamp: now });
+
+        const cachedResponse = NextResponse.json(cached.result);
+        cachedResponse.headers.set('X-Cache-Status', 'HIT');
+        cachedResponse.headers.set('X-Content-Type-Options', 'nosniff');
+        cachedResponse.headers.set('X-RateLimit-Limit', String(MAX_REQUESTS_PER_WINDOW));
+        cachedResponse.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
+        cachedResponse.headers.set('Access-Control-Allow-Origin', allowedOrigin);
+        return cachedResponse;
+      }
+      // Expired cache entry
+      responseCache.delete(cacheKey);
     }
 
-    // 6. Execute verified civic intelligence
-    const result = await runCivicAirIntelligence(sanitizedRecords, qualityReport);
+    // 8. Execute verified civic intelligence with cancellation support
+    const result = await runCivicAirIntelligence(sanitizedRecords, qualityReport, req.signal);
 
-    // 7. Store in LRU cache
+    // 9. Store in LRU cache with eviction of oldest entry
     if (responseCache.size >= MAX_CACHE_ENTRIES) {
       const oldestKey = responseCache.keys().next().value;
       if (oldestKey) responseCache.delete(oldestKey);
     }
     responseCache.set(cacheKey, { result, timestamp: now });
 
-    // 8. Return response with security & rate limiting headers
+    // 10. Return sanitized response with security headers
     const response = NextResponse.json(result);
     response.headers.set('X-Cache-Status', 'MISS');
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-RateLimit-Limit', String(MAX_REQUESTS_PER_WINDOW));
     response.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
+    response.headers.set('Access-Control-Allow-Origin', allowedOrigin);
     return response;
   } catch (_error: unknown) {
+    // Safe error message: never leak stack traces, secrets, or internal server state
     return NextResponse.json(
       { error: 'An error occurred while processing air intelligence. Please verify your telemetry inputs.' },
       { status: 500 }

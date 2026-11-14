@@ -25,6 +25,7 @@ import { AirRecord, DataQualityReport } from '@/lib/types';
 import { BHOPAL_MESSY_SAMPLE_CSV } from '@/lib/sampleData';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getAqiBadgeClasses } from '@/lib/utils';
+import { SYSTEM_LIMITS } from '@/lib/constants';
 
 interface DataStudioTabProps {
   records: AirRecord[];
@@ -46,6 +47,7 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'valid' | 'suspicious' | 'missing_critical'>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Debounce search query to prevent high-frequency table filtering on every keystroke
   const debouncedSearch = useDebounce(searchQuery, 250);
@@ -56,21 +58,82 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
   }, [debouncedSearch, statusFilter]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 1. Strict extension check (.csv and .txt only)
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith('.csv') && !lowerName.endsWith('.txt')) {
+      setUploadError('Invalid file type. Only .csv and .txt files are supported.');
+      e.target.value = '';
+      return;
+    }
+
+    // 2. Maximum file size check (2MB)
+    if (file.size > SYSTEM_LIMITS.MAX_UPLOAD_FILE_SIZE_BYTES) {
+      setUploadError('File size exceeds the 2 MB limit. Please upload a smaller file.');
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      if (text) onDataParsed(text);
+      if (!text) return;
+
+      // 3. Binary content detection (reject null bytes & control chars)
+      if (text.includes('\0') || /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(text.slice(0, 4096))) {
+        setUploadError('Binary content detected. Only valid plain-text tabular files are allowed.');
+        return;
+      }
+
+      // 4. Maximum row count validation
+      const rowCount = text.split(/\r\n|\r|\n/).filter((l) => l.trim().length > 0).length;
+      if (rowCount > SYSTEM_LIMITS.MAX_INGESTION_RECORDS) {
+        setUploadError(
+          `Record limit exceeded. File has ${rowCount} rows (maximum permitted is ${SYSTEM_LIMITS.MAX_INGESTION_RECORDS}).`
+        );
+        return;
+      }
+
+      onDataParsed(text);
+    };
+    reader.onerror = () => {
+      setUploadError('Failed to read the selected file. Please try again.');
     };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handlePasteSubmit = () => {
-    if (pastedText.trim()) {
-      onDataParsed(pastedText.trim());
-      setPasteMode(false);
+    setUploadError(null);
+    const trimmed = pastedText.trim();
+    if (!trimmed) return;
+
+    // 1. Binary character check
+    if (trimmed.includes('\0') || /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(trimmed.slice(0, 4096))) {
+      setUploadError('Binary content detected in pasted text. Only plain tabular text is allowed.');
+      return;
     }
+
+    // 2. Maximum length check
+    if (trimmed.length > 500000) {
+      setUploadError('Pasted text exceeds maximum allowable size (500 KB).');
+      return;
+    }
+
+    // 3. Maximum row count check
+    const rowCount = trimmed.split(/\r\n|\r|\n/).filter((l) => l.trim().length > 0).length;
+    if (rowCount > SYSTEM_LIMITS.MAX_INGESTION_RECORDS) {
+      setUploadError(
+        `Record limit exceeded. Pasted data has ${rowCount} rows (maximum permitted is ${SYSTEM_LIMITS.MAX_INGESTION_RECORDS}).`
+      );
+      return;
+    }
+
+    onDataParsed(trimmed);
+    setPasteMode(false);
   };
 
   // Performance efficiency: memoize filtered records with debounced query
@@ -121,6 +184,27 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
           </div>
         </div>
 
+        {/* Validation Error Alert */}
+        {uploadError && (
+          <div
+            role="alert"
+            className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center justify-between"
+          >
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" aria-hidden="true" />
+              <span className="font-medium">{uploadError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUploadError(null)}
+              aria-label="Dismiss error notification"
+              className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-0.5"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Upload / Paste Controls */}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* File Upload Box */}
@@ -131,12 +215,12 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
             <Upload className="w-8 h-8 text-slate-400 mb-2" aria-hidden="true" />
             <span className="text-xs font-bold text-navy-900">Upload CSV or Tabular Data File</span>
             <span className="text-[11px] text-slate-500 mt-1">
-              Drag & drop or click to browse (.csv, .tsv, .txt)
+              Drag & drop or click to browse (.csv, .txt)
             </span>
             <input
               id="csv-file-upload"
               type="file"
-              accept=".csv,.txt,.tsv"
+              accept=".csv,.txt"
               onChange={handleFileUpload}
               aria-label="Upload CSV air quality data file"
               className="sr-only"

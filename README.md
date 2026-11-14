@@ -6,7 +6,7 @@
 [![Live Deployment](https://img.shields.io/badge/Live%20App-hawasathi.vercel.app-10B981?style=for-the-badge&logo=vercel)](https://hawasathi.vercel.app)
 [![Built with Next.js 14](https://img.shields.io/badge/Built%20with-Next.js%2014-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![Powered by Gemini 3.5](https://img.shields.io/badge/Powered%20by-Google%20Gemini%203.5-4285F4?style=flat&logo=google)](https://ai.google.dev/)
-[![Tests Passing](https://img.shields.io/badge/Tests-88%2F88%20Passing-10B981?style=flat&logo=vitest)](./TESTING.md)
+[![Tests Passing](https://img.shields.io/badge/Tests-90%2F90%20Passing-10B981?style=flat&logo=vitest)](./TESTING.md)
 [![CI Pipeline](https://img.shields.io/badge/CI%20Pipeline-Passing-10B981?style=flat&logo=githubactions)](./.github/workflows/ci.yml)
 [![Code Quality](https://img.shields.io/badge/Code%20Quality-100%2F100-10B981?style=flat&logo=eslint)]()
 [![Efficiency](https://img.shields.io/badge/Efficiency-100%2F100-10B981?style=flat&logo=lighthouse)](./EFFICIENCY.md)

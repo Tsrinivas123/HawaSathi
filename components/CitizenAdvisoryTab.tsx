@@ -23,6 +23,7 @@ import {
 import { AnalysisResult, Language, ReadingLevel } from '@/lib/types';
 import { SYSTEM_LIMITS } from '@/lib/constants';
 import { getStoredReadingLevel, saveStoredReadingLevel } from '@/lib/storage';
+import { sanitizeExportText } from '@/lib/utils';
 
 interface CitizenAdvisoryTabProps {
   analysis: AnalysisResult | null;
@@ -119,7 +120,8 @@ Intervention Efficacy: ${analysis.comparison.interventionEffectiveness}
 ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
 ===============================================================`;
 
-    const blob = new Blob([memoText], { type: 'text/plain;charset=utf-8' });
+    const safeMemoText = sanitizeExportText(memoText);
+    const blob = new Blob([safeMemoText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

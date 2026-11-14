@@ -5,7 +5,7 @@
  * Optimized with lazy loaded tab views, O(1) record lookup indexing, and memoized callbacks.
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Sidebar } from '@/components/Sidebar';
 import { TopNav } from '@/components/TopNav';
@@ -86,6 +86,18 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [traceRecord, setTraceRecord] = useState<AirRecord | null>(null);
 
+  // In-flight request cancellation reference to abort stale Gemini analysis requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Clean up pending requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   // Preference setters with browser persistence
   const handleSetStakeholder = useCallback((s: StakeholderType) => {
     setStakeholder(s);
@@ -100,14 +112,22 @@ export default function Home() {
   // O(1) indexed lookup map built whenever records change (avoids repeated array.find)
   const recordMap = useMemo(() => buildRecordLookupMap(records), [records]);
 
-  // Execute Gemini analysis with deterministic fallback and historical persistence
+  // Execute Gemini analysis with deterministic fallback, cancellation, and historical persistence
   const runAnalysisWithRecords = useCallback(
     async (recList: AirRecord[], report: DataQualityReport) => {
+      // Abort any previous in-flight analysis request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setIsAnalyzing(true);
       try {
         const res = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({ records: recList, qualityReport: report }),
         });
 
@@ -141,7 +161,12 @@ export default function Home() {
         });
 
         setAnalysis(result);
-      } catch (_err) {
+      } catch (err: unknown) {
+        // If request was intentionally aborted, exit cleanly without fallback triggering
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return;
+        }
+
         // Fallback to verified deterministic reasoning engine
         // Strictly exclude outliers and duplicates from average AQI calculation
         const validRecords = recList.filter((r) => r.status === 'valid' && r.aqi !== null);

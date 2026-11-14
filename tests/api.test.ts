@@ -5,11 +5,14 @@ import { BHOPAL_MESSY_SAMPLE_CSV } from '../lib/sampleData';
 import { parseAndNormalizeData } from '../lib/normalizer';
 
 describe('Server API Route /api/analyze Suite', () => {
-  it('should respond to OPTIONS preflight with 204 and CORS headers', async () => {
-    const res = await OPTIONS();
+  it('should respond to OPTIONS preflight with 204 and restricted CORS headers', async () => {
+    const req = new NextRequest('http://localhost:3000/api/analyze', { method: 'OPTIONS' });
+    const res = await OPTIONS(req);
     expect(res.status).toBe(204);
     expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST, OPTIONS');
-    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBeDefined();
+    // Origin is strictly bound to authorized host, never insecure wildcard *
+    expect(res.headers.get('Access-Control-Allow-Origin')).not.toBe('*');
   });
 
   it('should reject non-JSON Content-Type with 415 Unsupported Media Type', async () => {
