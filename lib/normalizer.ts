@@ -13,13 +13,13 @@ import { UNIT_CONVERSIONS, SENSOR_ANOMALY_CODES } from './constants';
  * Standardized column mapping vocabulary for fuzzy header normalization.
  */
 const COLUMN_MAPPINGS: Record<string, readonly string[]> = {
-  location: ['location', 'area', 'locality', 'site', 'place', 'city', 'region', 'neighborhood', 'zone_name'],
-  ward: ['ward', 'ward_no', 'ward_number', 'zone', 'sector', 'division'],
+  location: ['location', 'area', 'locality', 'site', 'place', 'city', 'region', 'neighborhood', 'zone_name', 'site_location', 'site_area', 'station_name'],
+  ward: ['ward', 'ward_no', 'ward_number', 'zone', 'sector', 'division', 'municipal_ward'],
   station: ['station', 'station_id', 'sensor', 'sensor_id', 'device', 'device_id', 'monitor'],
-  timestamp: ['timestamp', 'time', 'date', 'datetime', 'recorded_at', 'reading_time', 'date_time'],
-  pm25: ['pm25', 'pm2.5', 'pm_25', 'pm2_5', 'fine_particulate', 'pm2.5_ugm3', 'pm25_raw'],
-  pm10: ['pm10', 'pm_10', 'coarse_particulate', 'pm10_ugm3', 'pm10_raw', 'rspm'],
-  aqi: ['aqi', 'air_quality_index', 'overall_aqi', 'composite_aqi', 'sub_index'],
+  timestamp: ['timestamp', 'time', 'date', 'datetime', 'recorded_at', 'reading_time', 'date_time', 'observed_time'],
+  pm25: ['pm25', 'pm2.5', 'pm_25', 'pm2_5', 'fine_particulate', 'pm2.5_ugm3', 'pm25_raw', 'particulate_2.5', 'particulate2.5', 'particulate25', 'particulate'],
+  pm10: ['pm10', 'pm_10', 'coarse_particulate', 'pm10_ugm3', 'pm10_raw', 'rspm', 'particulate_10', 'particulate10'],
+  aqi: ['aqi', 'air_quality_index', 'overall_aqi', 'composite_aqi', 'sub_index', 'index_score', 'index'],
   no2: ['no2', 'nitrogen_dioxide', 'no_2', 'no2_ugm3', 'no2_ppb'],
   so2: ['so2', 'sulfur_dioxide', 'so_2', 'so2_ugm3', 'so2_ppb'],
   co: ['co', 'carbon_monoxide', 'co_mgm3', 'co_ppm'],
@@ -217,9 +217,9 @@ export function parseAndNormalizeData(rawText: string): {
     const conversions: string[] = [];
     const flags: string[] = [];
 
-    // Sanitize text inputs against HTML tags, script injection, and control characters
+    // Sanitize text inputs against HTML tags, script injection, control characters, and length overflow
     const sanitizeText = (val: string): string =>
-      val.replace(/<[^>]*>?/gm, '').replace(/[\x00-\x1F\x7F]/g, '').trim();
+      val.replace(/<[^>]*>?/gm, '').replace(/[\x00-\x1F\x7F]/g, '').slice(0, 255).trim();
 
     const rawLoc = sanitizeText(String(mapped.location || mapped.ward || mapped.station || `Zone-${index + 1}`));
     const location = sanitizeText(rawLoc.replace(/^(Ward\s*\d+[\s:-]*)/i, '') || rawLoc);

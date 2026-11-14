@@ -5,7 +5,7 @@
  * Optimized with memoized filtering, typed action dispatches, and React.memo.
  */
 
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useEffect } from 'react';
 import {
   ClipboardCheck,
   ShieldCheck,
@@ -35,6 +35,12 @@ const LocalActionsTabComponent: React.FC<LocalActionsTabProps> = ({
   const [filterStakeholder, setFilterStakeholder] = useState<StakeholderType | 'all'>(currentStakeholder);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Synchronize internal filter with parent active stakeholder
+  useEffect(() => {
+    setFilterStakeholder(currentStakeholder);
+    setNewStakeholder(currentStakeholder);
+  }, [currentStakeholder]);
 
   // New action form state
   const [newTitle, setNewTitle] = useState('');

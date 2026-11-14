@@ -24,6 +24,15 @@ import { BHOPAL_MESSY_SAMPLE_CSV } from '@/lib/sampleData';
 import { generateDeterministicIntelligence } from '@/lib/gemini';
 import { buildRecordLookupMap, getAqiCategory } from '@/lib/utils';
 import { SYSTEM_LIMITS } from '@/lib/constants';
+import {
+  getStoredActions,
+  saveStoredActions,
+  saveBriefingToHistory,
+  getStoredStakeholder,
+  saveStoredStakeholder,
+  getStoredLanguage,
+  saveStoredLanguage,
+} from '@/lib/storage';
 
 // Clean loading placeholder for lazy-loaded tabs
 const TabLoadingSkeleton = ({ title }: { title: string }) => (
@@ -77,10 +86,21 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [traceRecord, setTraceRecord] = useState<AirRecord | null>(null);
 
+  // Preference setters with browser persistence
+  const handleSetStakeholder = useCallback((s: StakeholderType) => {
+    setStakeholder(s);
+    saveStoredStakeholder(s);
+  }, []);
+
+  const handleSetLanguage = useCallback((l: Language) => {
+    setLanguage(l);
+    saveStoredLanguage(l);
+  }, []);
+
   // O(1) indexed lookup map built whenever records change (avoids repeated array.find)
   const recordMap = useMemo(() => buildRecordLookupMap(records), [records]);
 
-  // Execute Gemini analysis with deterministic fallback
+  // Execute Gemini analysis with deterministic fallback and historical persistence
   const runAnalysisWithRecords = useCallback(
     async (recList: AirRecord[], report: DataQualityReport) => {
       setIsAnalyzing(true);
@@ -96,10 +116,35 @@ export default function Home() {
         }
 
         const result: AnalysisResult = await res.json();
+
+        // Restore any user-persisted action statuses
+        const storedActs = getStoredActions();
+        if (storedActs && storedActs.length > 0) {
+          const statusMap = new Map(storedActs.map((a) => [a.id, a.status]));
+          result.stakeholderActions = result.stakeholderActions.map((act) => ({
+            ...act,
+            status: statusMap.get(act.id) || act.status,
+          }));
+        }
+
+        // Save generated briefing to persistent storage
+        saveBriefingToHistory({
+          id: `BRIEF-${Date.now()}`,
+          timestamp: new Date().toLocaleString(),
+          averageAqi: result.averageAqi,
+          overallAqiCategory: result.overallAqiCategory,
+          primaryPollutant: result.primaryPollutant,
+          hotspots: result.hotspots,
+          activeLocations: recList.map((r) => r.location),
+          isAiGenerated: result.isAiGenerated,
+          executiveSummary: result.executiveSummary,
+        });
+
         setAnalysis(result);
       } catch (_err) {
         // Fallback to verified deterministic reasoning engine
-        const validRecords = recList.filter((r) => r.aqi !== null);
+        // Strictly exclude outliers and duplicates from average AQI calculation
+        const validRecords = recList.filter((r) => r.status === 'valid' && r.aqi !== null);
         const avgAqi =
           validRecords.length > 0
             ? Math.round(validRecords.reduce((acc, r) => acc + (r.aqi || 0), 0) / validRecords.length)
@@ -112,6 +157,30 @@ export default function Home() {
           avgAqi,
           category === 'Unknown' ? 'Very Poor' : (category as AnalysisResult['overallAqiCategory'])
         );
+
+        // Restore any user-persisted action statuses
+        const storedActs = getStoredActions();
+        if (storedActs && storedActs.length > 0) {
+          const statusMap = new Map(storedActs.map((a) => [a.id, a.status]));
+          fallbackResult.stakeholderActions = fallbackResult.stakeholderActions.map((act) => ({
+            ...act,
+            status: statusMap.get(act.id) || act.status,
+          }));
+        }
+
+        // Save fallback briefing to history
+        saveBriefingToHistory({
+          id: `BRIEF-${Date.now()}`,
+          timestamp: new Date().toLocaleString(),
+          averageAqi: fallbackResult.averageAqi,
+          overallAqiCategory: fallbackResult.overallAqiCategory,
+          primaryPollutant: fallbackResult.primaryPollutant,
+          hotspots: fallbackResult.hotspots,
+          activeLocations: recList.map((r) => r.location),
+          isAiGenerated: false,
+          executiveSummary: fallbackResult.executiveSummary,
+        });
+
         setAnalysis(fallbackResult);
       } finally {
         setIsAnalyzing(false);
@@ -137,8 +206,13 @@ export default function Home() {
     [runAnalysisWithRecords]
   );
 
-  // Auto-initialize with realistic Bhopal telemetry feed on mount
+  // Auto-initialize with stored preferences and realistic Bhopal telemetry feed on mount
   useEffect(() => {
+    const savedS = getStoredStakeholder();
+    if (savedS) setStakeholder(savedS);
+    const savedL = getStoredLanguage();
+    if (savedL) setLanguage(savedL);
+
     try {
       const { records: parsedRecords, qualityReport: parsedReport } =
         parseAndNormalizeData(BHOPAL_MESSY_SAMPLE_CSV);
@@ -159,16 +233,18 @@ export default function Home() {
     [recordMap, records]
   );
 
-  // Memoized action handlers
+  // Memoized action handlers with local persistence
   const handleUpdateActionStatus = useCallback(
     (id: string, status: StakeholderAction['status']) => {
       setAnalysis((prev) => {
         if (!prev) return null;
+        const updated = prev.stakeholderActions.map((act) =>
+          act.id === id ? { ...act, status } : act
+        );
+        saveStoredActions(updated);
         return {
           ...prev,
-          stakeholderActions: prev.stakeholderActions.map((act) =>
-            act.id === id ? { ...act, status } : act
-          ),
+          stakeholderActions: updated,
         };
       });
     },
@@ -178,9 +254,11 @@ export default function Home() {
   const handleCreateAction = useCallback((newAction: StakeholderAction) => {
     setAnalysis((prev) => {
       if (!prev) return null;
+      const updated = [newAction, ...prev.stakeholderActions];
+      saveStoredActions(updated);
       return {
         ...prev,
-        stakeholderActions: [newAction, ...prev.stakeholderActions],
+        stakeholderActions: updated,
       };
     });
   }, []);
@@ -198,7 +276,7 @@ export default function Home() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         stakeholder={stakeholder}
-        setStakeholder={setStakeholder}
+        setStakeholder={handleSetStakeholder}
         language={language}
       />
 
@@ -207,9 +285,9 @@ export default function Home() {
         {/* Top Navbar (Memoized) */}
         <TopNav
           stakeholder={stakeholder}
-          setStakeholder={setStakeholder}
+          setStakeholder={handleSetStakeholder}
           language={language}
-          setLanguage={setLanguage}
+          setLanguage={handleSetLanguage}
           onRunAnalysis={handleTriggerAnalysis}
           isAnalyzing={isAnalyzing}
           hasData={records.length > 0}
@@ -270,7 +348,7 @@ export default function Home() {
               <CitizenAdvisoryTab
                 analysis={analysis}
                 language={language}
-                setLanguage={setLanguage}
+                setLanguage={handleSetLanguage}
               />
             )}
 
@@ -281,7 +359,7 @@ export default function Home() {
             {activeTab === 'settings' && (
               <SettingsTab
                 stakeholder={stakeholder}
-                setStakeholder={setStakeholder}
+                setStakeholder={handleSetStakeholder}
               />
             )}
           </div>

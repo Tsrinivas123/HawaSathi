@@ -21,7 +21,6 @@ describe('Security & Threat Protection Suite', () => {
   });
 
   it('should not leak environment variables or secrets into public client exports', () => {
-    // Verify client bundle does not export server-only secret keys
     expect(process.env.GEMINI_API_KEY).toBeUndefined();
   });
 
@@ -29,5 +28,14 @@ describe('Security & Threat Protection Suite', () => {
     expect(CPCB_THRESHOLDS.PM25_24H_SAFE).toBe(60);
     expect(CPCB_THRESHOLDS.PM10_24H_SAFE).toBe(100);
     expect(CPCB_THRESHOLDS.CO_8H_SAFE_MGM3).toBe(2.0);
+  });
+
+  it('should sanitize and truncate excessively long location strings to prevent prompt injection', () => {
+    const massiveString = 'A'.repeat(500);
+    const csv = `Location,AQI\n${massiveString},120`;
+    const { records } = parseAndNormalizeData(csv);
+
+    expect(records.length).toBe(1);
+    expect(records[0].location.length).toBeLessThanOrEqual(255);
   });
 });

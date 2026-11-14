@@ -47,36 +47,54 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
   onRunAnalysis,
   isAnalyzing,
 }) => {
-  // Memoize chart data generation to prevent re-computation on parent re-renders
+  // Memoize chart data generation: strictly exclude duplicates and flagged outlier records
   const chartData = useMemo(() => {
+    const seenLocations = new Set<string>();
     return records
-      .filter((r) => r.pm25 !== null || r.aqi !== null)
-      .slice(0, 8)
+      .filter((r) => r.status === 'valid' && (r.pm25 !== null || r.aqi !== null))
+      .filter((r) => {
+        const loc = r.location.toLowerCase().trim();
+        if (seenLocations.has(loc)) return false;
+        seenLocations.add(loc);
+        return true;
+      })
       .map((r) => ({
-        name: r.location.split(' ')[0],
-        fullName: r.location,
+        name: r.location, // Full station name (no cut-off text)
+        fullName: `${r.location} (${r.ward})`,
         pm25: r.pm25 || 0,
         pm10: r.pm10 || 0,
         aqi: r.aqi || 0,
       }));
   }, [records]);
 
+  if (isAnalyzing) {
+    return (
+      <div className="p-16 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+        <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <h3 className="text-base font-bold text-navy-900">Generating Civic Air Quality Intelligence...</h3>
+        <p className="text-xs text-slate-500 max-w-md mx-auto">
+          Google Gemini is analyzing sensor telemetry, identifying pollution clusters, validating evidence records, and drafting stakeholder directives.
+        </p>
+      </div>
+    );
+  }
+
   if (!analysis) {
     return (
       <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-        <Sparkles className="w-10 h-10 text-emerald-600 mx-auto mb-3 animate-pulse" aria-hidden="true" />
+        <Sparkles className="w-10 h-10 text-emerald-600 mx-auto mb-3" aria-hidden="true" />
         <h3 className="text-base font-bold text-navy-900">No Air Intelligence Generated Yet</h3>
         <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
-          Ingest sensor readings or load the sample dataset to trigger our Gemini-powered civic environmental reasoning engine.
+          Ingest sensor readings or load sample telemetry to trigger our Gemini-powered civic environmental reasoning studio.
         </p>
         <button
           type="button"
           onClick={onRunAnalysis}
-          disabled={records.length === 0 || isAnalyzing}
+          disabled={records.length === 0}
           aria-label="Generate Air Intelligence Briefing"
           className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs cursor-pointer"
         >
-          {isAnalyzing ? 'Analyzing...' : 'Generate Air Intelligence'}
+          Generate Air Intelligence
         </button>
       </div>
     );
@@ -146,18 +164,29 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
           <span className="text-xs text-slate-500 font-mono">CPCB Limit: {CPCB_THRESHOLDS.PM25_24H_SAFE} µg/m³ PM2.5</span>
         </div>
 
-        <div className="h-64 w-full" aria-label="Bar chart showing PM2.5 and PM10 concentrations across monitored stations">
+        <div className="h-72 w-full" aria-label="Bar chart showing PM2.5 and PM10 concentrations across monitored stations">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 20 }}>
+            <BarChart data={chartData} margin={{ top: 15, right: 20, left: -10, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
-              <YAxis tick={{ fontSize: 11 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} interval={0} angle={-25} textAnchor="end" height={60} />
+              <YAxis tick={{ fontSize: 10, fill: '#475569' }} />
               <Tooltip
                 contentStyle={{ backgroundColor: '#07111F', borderRadius: '12px', color: '#fff', fontSize: '11px', border: 'none' }}
                 labelFormatter={(val, items) => items?.[0]?.payload?.fullName || val}
               />
-              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-              <ReferenceLine y={CPCB_THRESHOLDS.PM25_24H_SAFE} stroke="#EF4444" strokeDasharray="4 4" label={{ value: `Safe ${CPCB_THRESHOLDS.PM25_24H_SAFE} µg/m³`, fill: '#EF4444', fontSize: 10 }} />
+              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '15px' }} />
+              <ReferenceLine
+                y={CPCB_THRESHOLDS.PM25_24H_SAFE}
+                stroke="#EF4444"
+                strokeDasharray="4 4"
+                label={{ value: `PM2.5 Safe (${CPCB_THRESHOLDS.PM25_24H_SAFE} µg/m³)`, fill: '#EF4444', fontSize: 10, position: 'top' }}
+              />
+              <ReferenceLine
+                y={CPCB_THRESHOLDS.PM10_24H_SAFE}
+                stroke="#3B82F6"
+                strokeDasharray="3 3"
+                label={{ value: `PM10 Safe (${CPCB_THRESHOLDS.PM10_24H_SAFE} µg/m³)`, fill: '#3B82F6', fontSize: 10, position: 'top' }}
+              />
               <Bar dataKey="pm25" name="PM2.5 (µg/m³)" fill="#10B981" radius={[6, 6, 0, 0]} />
               <Bar dataKey="pm10" name="PM10 (µg/m³)" fill="#3B82F6" radius={[6, 6, 0, 0]} />
             </BarChart>

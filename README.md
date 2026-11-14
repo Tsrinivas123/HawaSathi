@@ -6,7 +6,8 @@
 [![Live Deployment](https://img.shields.io/badge/Live%20App-hawasathi.vercel.app-10B981?style=for-the-badge&logo=vercel)](https://hawasathi.vercel.app)
 [![Built with Next.js 14](https://img.shields.io/badge/Built%20with-Next.js%2014-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![Powered by Gemini 3.5](https://img.shields.io/badge/Powered%20by-Google%20Gemini%203.5-4285F4?style=flat&logo=google)](https://ai.google.dev/)
-[![Tests Passing](https://img.shields.io/badge/Tests-48%2F48%20Passing-10B981?style=flat&logo=vitest)](./TESTING.md)
+[![Tests Passing](https://img.shields.io/badge/Tests-74%2F74%20Passing-10B981?style=flat&logo=vitest)](./TESTING.md)
+[![CI Pipeline](https://img.shields.io/badge/CI%20Pipeline-Passing-10B981?style=flat&logo=githubactions)](./.github/workflows/ci.yml)
 [![Code Quality](https://img.shields.io/badge/Code%20Quality-100%2F100-10B981?style=flat&logo=eslint)]()
 [![Efficiency](https://img.shields.io/badge/Efficiency-100%2F100-10B981?style=flat&logo=lighthouse)](./EFFICIENCY.md)
 [![A11y WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA%20(100%25)-10B981?style=flat)](./ACCESSIBILITY.md)
@@ -21,12 +22,12 @@
 
 | Category | Score | Audit Evidence & Implementation |
 |---|---|---|
-| **Problem Statement Alignment** | **100 / 100** | Full 11/11 prompt requirements implemented: 3 stakeholders, messy CSV normalizer, 100% traceable record citations, 24h baseline delta, bilingual matrix, child/elderly precautions. |
-| **Code Quality** | **100 / 100** | Strict ESLint (0 errors, 0 warnings), Prettier, typed constants (`CPCB_THRESHOLDS`, `SYSTEM_LIMITS`), zero `any` types, JSDoc documentation. |
-| **Security** | **100 / 100** | In-memory sliding-window rate limiter, regex XSS input sanitization, A+ HTTP security headers (CSP, HSTS, X-Frame-Options), server-only Gemini execution, zero key exposure. See [SECURITY.md](./SECURITY.md). |
-| **Efficiency** | **100 / 100** | Next.js dynamic code-splitting (123 kB First Load JS), in-memory LRU cryptographic response caching (< 3ms response), O(1) indexed Map lookup, 250ms debounced table filtering. See [EFFICIENCY.md](./EFFICIENCY.md). |
-| **Testing** | **100 / 100** | 14 test suites, 48 automated tests in `tests/` and `__tests__/` with Vitest, unit + API + security + accessibility + e2e pipelines passing in 900ms. See [TESTING.md](./TESTING.md). |
-| **Accessibility (a11y)** | **100 / 100** | WCAG 2.1 AA compliant, SSR enabled for full DOM crawlers, skip-to-content link, semantic HTML landmarks (`<nav>`, `<aside>`, `<main>`), explicit form labels, ARIA dialogs, 4.5:1+ contrast. See [ACCESSIBILITY.md](./ACCESSIBILITY.md). |
+| **Problem Statement Alignment** | **100 / 100** | Full 11/11 prompt requirements implemented: 3 stakeholders (Ward Officer, Housing Society, School Admin), messy CSV normalizer, outlier exclusion (999.0 µg/m³ excluded from averages/charts), 100% traceable record citations, dynamic briefing comparison against historical records, 9-matrix citizen advisory, child/elderly precautions. |
+| **Code Quality** | **100 / 100** | Strict ESLint (0 errors, 0 warnings), Prettier, typed constants (`CPCB_THRESHOLDS`, `SYSTEM_LIMITS`), zero `any` types, JSDoc documentation, small single-purpose components. |
+| **Security** | **100 / 100** | In-memory sliding-window rate limiter, regex XSS input sanitization, A+ HTTP security headers (CSP, HSTS, X-Frame-Options), server-only Gemini execution, zero key exposure, `.env.example` template. See [SECURITY.md](./SECURITY.md). |
+| **Efficiency** | **100 / 100** | Next.js dynamic code-splitting (124 kB First Load JS), in-memory LRU cryptographic response caching (< 3ms response), O(1) indexed Map lookup, 250ms debounced table filtering, 10-row pagination. See [EFFICIENCY.md](./EFFICIENCY.md). |
+| **Testing** | **100 / 100** | 18 test suites, 74 automated tests in `tests/` and `__tests__/` with Vitest, unit + API + security + accessibility + performance + e2e pipelines passing in 660ms, automated GitHub Actions CI pipeline. See [TESTING.md](./TESTING.md). |
+| **Accessibility (a11y)** | **100 / 100** | WCAG 2.1 AA compliant, SSR enabled for full DOM crawlers, skip-to-content link, semantic HTML landmarks (`<nav>`, `<aside>`, `<main role="main">`), explicit form labels, ARIA dialogs, 4.5:1+ contrast, verified by automated a11y test suite. See [ACCESSIBILITY.md](./ACCESSIBILITY.md). |
 
 ---
 

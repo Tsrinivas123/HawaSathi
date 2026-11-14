@@ -98,9 +98,6 @@ const SidebarComponent: React.FC<SidebarProps> = ({
               <span className="font-bold text-white tracking-tight text-lg">
                 {language === 'hi' ? 'हवासार्थी' : 'HawaSathi'}
               </span>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono font-semibold">
-                v1.0
-              </span>
             </div>
             <p className="text-[11px] text-slate-400 font-medium">
               {getTranslation(language, 'tagline', 'Air Data to Local Action')}

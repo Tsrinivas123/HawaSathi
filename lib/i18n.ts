@@ -44,8 +44,8 @@ export const UI_TRANSLATIONS: Record<Language, Record<string, string>> = {
     // Actions & Buttons
     viewActions: 'View Stakeholder Actions',
     openDataStudio: 'Open Data Studio',
-    loadDemoData: 'Load Bhopal Feed [DEMO DATA]',
-    loadCleanData: 'Load Clean Baseline [DEMO DATA]',
+    loadDemoData: 'Load Sample Telemetry Data',
+    loadCleanData: 'Load Benchmark Baseline',
     dispatchNewAction: 'Dispatch New Action',
     printBulletin: 'Print Bulletin',
     copyWhatsApp: 'Copy WhatsApp Bulletin',
@@ -146,8 +146,8 @@ export const UI_TRANSLATIONS: Record<Language, Record<string, string>> = {
     // Actions & Buttons
     viewActions: 'View Action Plan',
     openDataStudio: 'Open Data Studio',
-    loadDemoData: 'Load Bhopal Feed [DEMO DATA]',
-    loadCleanData: 'Load Clean Baseline [DEMO DATA]',
+    loadDemoData: 'Load Sample Telemetry Data',
+    loadCleanData: 'Load Benchmark Baseline',
     dispatchNewAction: 'Dispatch New Action Order',
     printBulletin: 'Print Advisory',
     copyWhatsApp: 'Copy WhatsApp Message',

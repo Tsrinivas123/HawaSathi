@@ -5,7 +5,7 @@
  * Optimized with search debouncing, memoized filtering, and DRY color helpers.
  */
 
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useEffect } from 'react';
 import {
   Upload,
   FileSpreadsheet,
@@ -18,9 +18,11 @@ import {
   Filter,
   Check,
   Eye,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { AirRecord, DataQualityReport } from '@/lib/types';
-import { BHOPAL_MESSY_SAMPLE_CSV, CLEAN_BENCHMARK_CSV } from '@/lib/sampleData';
+import { BHOPAL_MESSY_SAMPLE_CSV } from '@/lib/sampleData';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getAqiBadgeClasses } from '@/lib/utils';
 
@@ -30,6 +32,8 @@ interface DataStudioTabProps {
   onDataParsed: (rawCsv: string) => void;
   onOpenTrace: (recordId: string) => void;
 }
+
+const PAGE_SIZE = 10;
 
 const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
   records,
@@ -41,9 +45,15 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
   const [pastedText, setPastedText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'valid' | 'suspicious' | 'missing_critical'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Debounce search query to prevent high-frequency table filtering on every keystroke
   const debouncedSearch = useDebounce(searchQuery, 250);
+
+  // Reset to first page whenever search or status filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, statusFilter]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,6 +87,12 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
     });
   }, [records, debouncedSearch, statusFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
+  const paginatedRecords = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredRecords.slice(start, start + PAGE_SIZE);
+  }, [filteredRecords, currentPage]);
+
   return (
     <div className="space-y-6">
       {/* Ingestion & Sample Data Loader Banner */}
@@ -96,20 +112,11 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
             <button
               type="button"
               onClick={() => onDataParsed(BHOPAL_MESSY_SAMPLE_CSV)}
-              aria-label="Load Bhopal Messy Telemetry Feed [DEMO DATA]"
+              aria-label="Load Bhopal Sample Telemetry"
               className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-              <span>Load Bhopal Feed [DEMO DATA]</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onDataParsed(CLEAN_BENCHMARK_CSV)}
-              aria-label="Load Clean Benchmark Baseline CSV [DEMO DATA]"
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-              <span>Load Clean Baseline</span>
+              <span>Load Sample Data</span>
             </button>
           </div>
         </div>
@@ -309,7 +316,7 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredRecords.map((rec) => (
+              {paginatedRecords.map((rec) => (
                 <tr key={rec.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="py-3 px-4 font-mono font-bold text-slate-800">{rec.id}</td>
                   <td className="py-3 px-4 font-medium text-navy-900">{rec.location}</td>
@@ -376,6 +383,50 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="p-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/30">
+          <div>
+            Showing <span className="font-semibold text-slate-700">{(currentPage - 1) * PAGE_SIZE + 1}</span> to{' '}
+            <span className="font-semibold text-slate-700">
+              {Math.min(currentPage * PAGE_SIZE, filteredRecords.length)}
+            </span>{' '}
+            of <span className="font-semibold text-slate-700">{filteredRecords.length}</span> records
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              aria-label="Previous Page"
+              className={`px-2.5 py-1 rounded-lg border flex items-center space-x-1 ${
+                currentPage === 1
+                  ? 'border-slate-200 text-slate-300 cursor-not-allowed'
+                  : 'border-slate-300 text-slate-700 hover:bg-white cursor-pointer'
+              }`}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Previous</span>
+            </button>
+            <span className="px-2 font-mono text-[11px] font-semibold text-slate-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              aria-label="Next Page"
+              className={`px-2.5 py-1 rounded-lg border flex items-center space-x-1 ${
+                currentPage === totalPages
+                  ? 'border-slate-200 text-slate-300 cursor-not-allowed'
+                  : 'border-slate-300 text-slate-700 hover:bg-white cursor-pointer'
+              }`}
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </section>
     </div>

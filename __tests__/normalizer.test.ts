@@ -36,4 +36,36 @@ describe('Data Normalization & Cleaning Engine', () => {
     expect(qualityReport.dataCompletenessPct).toBeLessThanOrEqual(100);
     expect(qualityReport.detectedUnits['aqi']).toBe('Index (0-500)');
   });
+
+  it('should handle text in numeric fields gracefully without crashing', () => {
+    const messyNumericCsv = `Site Area,Ward,AQI,PM2.5,PM10\nZone A,Ward 10,Offline,Faulty Sensor,N/A\nZone B,Ward 11,180,95.5,140`;
+    const { records, qualityReport } = parseAndNormalizeData(messyNumericCsv);
+
+    expect(records.length).toBe(2);
+    expect(records[0].aqi).toBeNull();
+    expect(records[0].pm25).toBeNull();
+    expect(records[1].aqi).toBe(180);
+    expect(records[1].pm25).toBe(95.5);
+    expect(qualityReport.missingReadings).toBeGreaterThan(0);
+  });
+
+  it('should flag duplicate records with identical location and timestamp', () => {
+    const duplicateCsv = `Location,Ward,Date / Time,AQI\nStation 1,Ward 01,2026-11-14 08:00,150\nStation 1,Ward 01,2026-11-14 08:00,150`;
+    const { records, qualityReport } = parseAndNormalizeData(duplicateCsv);
+
+    expect(records.length).toBe(2);
+    expect(qualityReport.duplicateRecords).toBe(1);
+    expect(records[1].flags.some(f => f.includes('Duplicate'))).toBe(true);
+  });
+
+  it('should normalize heterogeneous column header variants', () => {
+    const aliasCsv = `Site Location,Municipal Ward,Observed Time,Particulate 2.5,Index Score\nBhopal North,Ward 33,2026-11-14 07:30,110.2,210`;
+    const { records } = parseAndNormalizeData(aliasCsv);
+
+    expect(records.length).toBe(1);
+    expect(records[0].location).toContain('Bhopal North');
+    expect(records[0].ward).toContain('Ward 33');
+    expect(records[0].pm25).toBe(110.2);
+    expect(records[0].aqi).toBe(210);
+  });
 });

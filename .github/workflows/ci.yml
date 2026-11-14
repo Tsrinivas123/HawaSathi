@@ -1,0 +1,49 @@
+name: HawaSathi CI & Quality Evaluation Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test-and-evaluate:
+    name: Automated Test & Quality Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Code Quality & Linting Audit
+        run: npm run lint
+
+      - name: Automated Unit & Integration Tests
+        run: npm run test
+
+      - name: Accessibility (WCAG 2.1 AA) Compliance Audit
+        run: npm run test:a11y
+
+      - name: Security & Vulnerability Defense Audit
+        run: npm run test:security
+
+      - name: High-Throughput Performance & Efficiency Audit
+        run: npm run test:perf
+
+      - name: End-to-End Pipeline Verification
+        run: npm run test:e2e
+
+      - name: Production Next.js Build Verification
+        run: npm run build
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'demo_placeholder_eval_key' }}
+          NEXT_TELEMETRY_DISABLED: 1
