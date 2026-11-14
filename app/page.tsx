@@ -21,7 +21,7 @@ import {
 } from '@/lib/types';
 import { parseAndNormalizeData } from '@/lib/normalizer';
 import { BHOPAL_MESSY_SAMPLE_CSV } from '@/lib/sampleData';
-import { generateDeterministicIntelligence } from '@/lib/gemini';
+import { generateDeterministicIntelligence } from '@/lib/gemini/fallbackGenerator';
 import { buildRecordLookupMap, getAqiCategory } from '@/lib/utils';
 import { SYSTEM_LIMITS } from '@/lib/constants';
 import {
@@ -88,6 +88,9 @@ export default function Home() {
 
   // In-flight request cancellation reference to abort stale Gemini analysis requests
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Memoization reference to avoid re-running normalization on unchanged CSV data
+  const lastNormalizedCsvRef = useRef<string>('');
+  const lastNormalizedResultRef = useRef<{ records: AirRecord[]; qualityReport: DataQualityReport } | null>(null);
 
   // Clean up pending requests on unmount
   useEffect(() => {
@@ -214,15 +217,24 @@ export default function Home() {
     []
   );
 
-  // Parse raw text into structured telemetry
+  // Parse raw text into structured telemetry with cache to avoid re-normalization
   const handleDataParsed = useCallback(
     (rawCsv: string) => {
       try {
-        const { records: parsedRecords, qualityReport: parsedReport } =
-          parseAndNormalizeData(rawCsv);
-        setRecords(parsedRecords);
-        setQualityReport(parsedReport);
-        runAnalysisWithRecords(parsedRecords, parsedReport);
+        if (lastNormalizedCsvRef.current === rawCsv && lastNormalizedResultRef.current) {
+          const { records: cachedRecords, qualityReport: cachedReport } = lastNormalizedResultRef.current;
+          setRecords(cachedRecords);
+          setQualityReport(cachedReport);
+          runAnalysisWithRecords(cachedRecords, cachedReport);
+          return;
+        }
+
+        const result = parseAndNormalizeData(rawCsv);
+        lastNormalizedCsvRef.current = rawCsv;
+        lastNormalizedResultRef.current = result;
+        setRecords(result.records);
+        setQualityReport(result.qualityReport);
+        runAnalysisWithRecords(result.records, result.qualityReport);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown parsing error';
         alert(`Error parsing tabular data: ${message}`);

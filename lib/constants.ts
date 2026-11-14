@@ -1,7 +1,7 @@
 /**
  * @file constants.ts
- * @description Centralized constants and environmental standards for HawaSathi.
- * Eliminates magic numbers across normalizer, AI engines, and UI rendering.
+ * @description Centralized constants, thresholds, and limits for HawaSathi.
+ * Eliminates magic numbers across normalizer, AI engines, security, cache, and UI.
  */
 
 /**
@@ -60,7 +60,52 @@ export const SYSTEM_LIMITS = {
   MAX_UPLOAD_FILE_SIZE_BYTES: 2097152, // 2MB max upload limit
   DEFAULT_DEBOUNCE_MS: 300,
   SEARCH_DEBOUNCE_MS: 250,
-  MAX_PAYLOAD_SIZE_BYTES: 1048576,
+  MAX_PAYLOAD_SIZE_BYTES: 1048576, // 1MB body limit
   MAX_FIELD_LENGTH: 255,
   BASELINE_HISTORICAL_AQI: 211,
+} as const;
+
+/**
+ * Rate limiting and network security thresholds.
+ */
+export const SECURITY_CONSTANTS = {
+  RATE_LIMIT_WINDOW_MS: 60 * 1000, // 1 minute sliding window
+  MAX_REQUESTS_PER_WINDOW: 60, // 60 requests/minute per client IP
+  MAX_RATE_LIMIT_MAP_SIZE: 500, // Cap Map entries to prevent unbounded memory growth
+  DEFAULT_CLIENT_IP: '127.0.0.1',
+  RETRY_AFTER_SECONDS: 60,
+  CORS_MAX_AGE_SECONDS: 86400,
+  ALLOWED_ORIGIN_PATTERNS: ['localhost', '127.0.0.1', 'vercel.app'],
+} as const;
+
+/**
+ * Cryptographic caching constants.
+ */
+export const CACHE_CONSTANTS = {
+  CACHE_TTL_MS: 10 * 60 * 1000, // 10 minutes cache TTL
+  MAX_CACHE_ENTRIES: 50,
+  HASH_ALGORITHM: 'sha256',
+  CACHE_KEY_PREFIX: 'hawa_sha256',
+} as const;
+
+/**
+ * Gemini GenAI client parameters.
+ */
+export const AI_CONSTANTS = {
+  GEMINI_MODELS: [
+    'gemini-2.5-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-1.5-flash',
+  ] as const,
+  DEFAULT_TIMEOUT_MS: 25000, // 25s timeout
+  MAX_OUTPUT_TOKENS: 4096,
+  TEMPERATURE: 0.15,
+} as const;
+
+/**
+ * UI presentation and pagination constants.
+ */
+export const UI_CONSTANTS = {
+  TABLE_PAGE_SIZE: 10,
+  MAX_PASTED_TEXT_BYTES: 500000,
 } as const;
