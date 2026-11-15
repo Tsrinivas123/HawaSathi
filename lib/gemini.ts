@@ -10,6 +10,7 @@ import { AI_CONSTANTS, SYSTEM_LIMITS } from './constants';
 import { buildCivicIntelligencePrompt } from './gemini/promptBuilder';
 import { parseModelJson, validateAndMergeAiOutput } from './gemini/responseParser';
 import { generateDeterministicIntelligence } from './gemini/fallbackGenerator';
+import { StoredBriefing } from './storage';
 
 export { generateDeterministicIntelligence };
 
@@ -103,22 +104,36 @@ async function tryCascadedModels(
  * @param records Sanitized AirRecord array
  * @param qualityReport DataQualityReport audit
  * @param parentSignal Optional AbortSignal for user cancellation
+ * @param previousBriefing Optional previous briefing for genuine historical comparison
  * @returns Fully populated, validated AnalysisResult
  */
 export async function runCivicAirIntelligence(
   records: AirRecord[],
   qualityReport: DataQualityReport,
-  parentSignal?: AbortSignal
+  parentSignal?: AbortSignal,
+  previousBriefing?: StoredBriefing | null
 ): Promise<AnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY || '';
   const { validRecords, avgAqi, overallAqiCategory, validRecordIds } = computeIngestionSummary(records);
-  const fallback = generateDeterministicIntelligence(records, qualityReport, avgAqi, overallAqiCategory);
+  const fallback = generateDeterministicIntelligence(
+    records,
+    qualityReport,
+    avgAqi,
+    overallAqiCategory,
+    previousBriefing
+  );
 
   if (!apiKey || validRecords.length === 0) {
     return fallback;
   }
 
-  const prompt = buildCivicIntelligencePrompt(records, qualityReport, avgAqi, overallAqiCategory);
+  const prompt = buildCivicIntelligencePrompt(
+    records,
+    qualityReport,
+    avgAqi,
+    overallAqiCategory,
+    previousBriefing
+  );
   const aiResult = await tryCascadedModels(
     AI_CONSTANTS.GEMINI_MODELS,
     apiKey,

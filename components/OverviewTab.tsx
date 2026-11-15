@@ -54,12 +54,17 @@ const OverviewTabComponent: React.FC<OverviewTabProps> = ({
   const aqiCategory = analysis?.overallAqiCategory || 'Very Poor';
 
   const getStakeholderHero = () => {
+    const hotspotNames = (analysis?.hotspots || []).slice(0, 2).map((h) => h.location);
+    const hotspotStr = hotspotNames.length > 0
+      ? hotspotNames.join(language === 'hi' ? ' और ' : ' and ')
+      : (language === 'hi' ? 'पहचाने गए मुख्य हॉटस्पॉट' : 'Primary urban clusters');
+
     if (stakeholder === 'ward_officer') {
       return {
         title: language === 'hi' ? 'नगर निगम वार्ड कार्य आदेश' : 'Municipal Ward Action Directive',
         desc: language === 'hi'
-          ? 'गोविंदपुरा और करोंद क्षेत्रों में प्रदूषण सीमा से अधिक है। धूल नियंत्रण के लिए तत्काल पानी का छिड़काव और निर्माण कार्य निरीक्षण के निर्देश दिए गए हैं।'
-          : '3 urban clusters are exhibiting elevated particulate levels. Anti-smog water sprinklers and construction dust inspections are recommended for immediate dispatch.',
+          ? `${hotspotStr} क्षेत्रों में प्रदूषण स्तर बढ़ा हुआ है। धूल नियंत्रण के लिए तत्काल पानी का छिड़काव और निर्माण कार्य निरीक्षण के निर्देश दिए गए हैं।`
+          : `${hotspotStr} are exhibiting elevated particulate levels. Anti-smog water sprinklers and construction dust inspections are recommended for immediate dispatch.`,
         icon: ShieldAlert,
         actionText: language === 'hi' ? 'वार्ड हॉटस्पॉट देखें' : 'Inspect Ward Hotspots',
         actionTab: 'intelligence',

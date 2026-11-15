@@ -28,6 +28,7 @@ import {
   getStoredActions,
   saveStoredActions,
   saveBriefingToHistory,
+  getStoredBriefings,
   getStoredStakeholder,
   saveStoredStakeholder,
   getStoredLanguage,
@@ -126,12 +127,19 @@ export default function Home() {
       abortControllerRef.current = controller;
 
       setIsAnalyzing(true);
+      const existingBriefings = getStoredBriefings();
+      const prevBriefing = existingBriefings.length > 0 ? existingBriefings[0] : null;
+
       try {
         const res = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
-          body: JSON.stringify({ records: recList, qualityReport: report }),
+          body: JSON.stringify({
+            records: recList,
+            qualityReport: report,
+            previousBriefing: prevBriefing,
+          }),
         });
 
         if (!res.ok) {
@@ -183,7 +191,8 @@ export default function Home() {
           recList,
           report,
           avgAqi,
-          category === 'Unknown' ? 'Very Poor' : (category as AnalysisResult['overallAqiCategory'])
+          category === 'Unknown' ? 'Very Poor' : (category as AnalysisResult['overallAqiCategory']),
+          prevBriefing
         );
 
         // Restore any user-persisted action statuses

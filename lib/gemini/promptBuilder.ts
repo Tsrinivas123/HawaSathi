@@ -6,6 +6,7 @@
 
 import { AirRecord, DataQualityReport, AnalysisResult } from '@/lib/types';
 import { PREVIOUS_BRIEFING_RECORD } from '@/lib/sampleData';
+import { StoredBriefing } from '@/lib/storage';
 
 /**
  * Builds compact JSON telemetry representation safely bounded within delimiter tags.
@@ -36,20 +37,36 @@ function buildPromptHeader(
   total: number,
   qualityReport: DataQualityReport,
   avgAqi: number,
-  category: string
+  category: string,
+  previousBriefing?: StoredBriefing | null
 ): string {
+  const prevDate = previousBriefing ? previousBriefing.timestamp : PREVIOUS_BRIEFING_RECORD.date;
+  const prevAqi = previousBriefing ? previousBriefing.averageAqi : PREVIOUS_BRIEFING_RECORD.averageAqi;
+  const prevHotspots = previousBriefing
+    ? previousBriefing.hotspots.map((h) => h.location).join(', ')
+    : PREVIOUS_BRIEFING_RECORD.primaryHotspots.join(', ');
+
   return `DATA QUALITY SUMMARY:
 Total Records Ingested: ${total}
 Valid Records: ${qualityReport.validRecords}
 Completeness: ${qualityReport.dataCompletenessPct}%
 City Average AQI: ${avgAqi} (${category})
-Previous Historical Briefing (24h ago): Avg AQI ${PREVIOUS_BRIEFING_RECORD.averageAqi}, Hotspots: ${PREVIOUS_BRIEFING_RECORD.primaryHotspots.join(', ')}`;
+Previous Historical Briefing (${prevDate}): Avg AQI ${prevAqi}, Hotspots: ${prevHotspots || 'None recorded'}`;
 }
 
 /**
  * Builds the expected JSON schema prompt string.
  */
-function buildSchemaFormatSpecification(avgAqi: number, category: string): string {
+function buildSchemaFormatSpecification(
+  avgAqi: number,
+  category: string,
+  previousBriefing?: StoredBriefing | null
+): string {
+  const prevDate = previousBriefing ? previousBriefing.timestamp : PREVIOUS_BRIEFING_RECORD.date;
+  const prevAqi = previousBriefing ? previousBriefing.averageAqi : PREVIOUS_BRIEFING_RECORD.averageAqi;
+  const aqiDelta = avgAqi - prevAqi;
+  const aqiTrend = aqiDelta > 5 ? 'deteriorated' : aqiDelta < -5 ? 'improved' : 'stable';
+
   return `{
   "executiveSummary": "string",
   "overallAqiCategory": "${category}",
@@ -75,9 +92,9 @@ function buildSchemaFormatSpecification(avgAqi: number, category: string): strin
     "en_official": { "language": "en", "readingLevel": "official", "headline": "string", "summary": "string", "generalGuidance": ["string"], "vulnerablePrecautions": [{"group": "string", "precaution": "string"}], "dosAndDonts": {"dos": ["string"], "donts": ["string"]} }
   },
   "comparison": {
-    "previousDate": "${PREVIOUS_BRIEFING_RECORD.date}",
-    "aqiDelta": ${avgAqi - PREVIOUS_BRIEFING_RECORD.averageAqi},
-    "aqiTrend": "${avgAqi > PREVIOUS_BRIEFING_RECORD.averageAqi ? 'deteriorated' : avgAqi < PREVIOUS_BRIEFING_RECORD.averageAqi ? 'improved' : 'stable'}",
+    "previousDate": "${prevDate}",
+    "aqiDelta": ${aqiDelta},
+    "aqiTrend": "${aqiTrend}",
     "newHotspots": ["string"], "resolvedHotspots": ["string"], "interventionEffectiveness": "string", "narrativeDiff": "string"
   }
 }`;
@@ -89,17 +106,19 @@ function buildSchemaFormatSpecification(avgAqi: number, category: string): strin
  * @param qualityReport DataQualityReport audit
  * @param avgAqi Citywide average AQI
  * @param overallAqiCategory CPCB AQI category string
+ * @param previousBriefing Optional previous briefing for historical delta comparison
  * @returns Complete prompt string
  */
 export function buildCivicIntelligencePrompt(
   records: readonly AirRecord[],
   qualityReport: DataQualityReport,
   avgAqi: number,
-  overallAqiCategory: AnalysisResult['overallAqiCategory']
+  overallAqiCategory: AnalysisResult['overallAqiCategory'],
+  previousBriefing?: StoredBriefing | null
 ): string {
   const telemetryData = buildUntrustedTelemetrySnippet(records);
-  const header = buildPromptHeader(records.length, qualityReport, avgAqi, overallAqiCategory);
-  const schema = buildSchemaFormatSpecification(avgAqi, overallAqiCategory);
+  const header = buildPromptHeader(records.length, qualityReport, avgAqi, overallAqiCategory, previousBriefing);
+  const schema = buildSchemaFormatSpecification(avgAqi, overallAqiCategory, previousBriefing);
 
   return `You are HawaSathi's Civic Environmental Intelligence Engine.
 Analyze this civic air quality dataset for urban local authorities, housing societies, and school administrators.
@@ -124,7 +143,7 @@ STRICT OPERATIONAL RULES:
    - 'school_admin' (Relocating morning assemblies indoors, suspension of vigorous outdoor sports, air-filtered sick rooms, child-friendly alerts)
 4. Provide Citizen Advisories in English, Hindi (हिंदी), and Hinglish, across 3 reading levels: 'citizen', 'child', 'official'.
 5. Detail specific vulnerable group precautions for: Children (<12), Elderly (>65), and Respiratory/Cardiac Patients.
-6. Compare with 24h baseline (${PREVIOUS_BRIEFING_RECORD.averageAqi} AQI).
+6. Compare with previous briefing.
 
 OUTPUT STRICTLY VALID JSON MATCHING THIS EXACT SCHEMA:
 ${schema}

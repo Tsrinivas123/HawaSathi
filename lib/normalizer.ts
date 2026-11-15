@@ -31,15 +31,29 @@ const COLUMN_MAPPINGS: Record<string, readonly string[]> = {
  * @param header The raw column title from the CSV header row
  */
 function normalizeHeader(header: string): string {
-  const clean = header.trim().toLowerCase().replace(/[\s\-_./]+/g, '');
+  const clean = header.trim().toLowerCase().replace(/[\s\-_./()[\]{}]+/g, '');
+  // Exact match pass
   for (const [canonical, aliases] of Object.entries(COLUMN_MAPPINGS)) {
     for (const alias of aliases) {
-      const cleanAlias = alias.replace(/[\s\-_./]+/g, '');
-      if (clean === cleanAlias || clean.includes(cleanAlias)) {
+      const cleanAlias = alias.replace(/[\s\-_./()[\]{}]+/g, '');
+      if (clean === cleanAlias) {
         return canonical;
       }
     }
   }
+  // Longest substring match pass (prioritizes specific terms like 'coarse_particulate' over 'particulate')
+  let bestMatch: { canonical: string; length: number } | null = null;
+  for (const [canonical, aliases] of Object.entries(COLUMN_MAPPINGS)) {
+    for (const alias of aliases) {
+      const cleanAlias = alias.replace(/[\s\-_./()[\]{}]+/g, '');
+      if (clean.includes(cleanAlias)) {
+        if (!bestMatch || cleanAlias.length > bestMatch.length) {
+          bestMatch = { canonical, length: cleanAlias.length };
+        }
+      }
+    }
+  }
+  if (bestMatch) return bestMatch.canonical;
   return header.trim().toLowerCase();
 }
 
@@ -227,15 +241,21 @@ export function parseAndNormalizeData(rawText: string): {
     const ward = sanitizeText(String(mapped.ward || (rawLoc.match(/Ward\s*\d+/i)?.[0] ?? 'General Ward')));
     const station = sanitizeText(String(mapped.station || `Station-${(index % 4) + 1}`));
 
-    // Normalize mixed date formats (DD/MM/YYYY, DD-MM-YYYY, ISO strings)
+    // Normalize mixed date formats (DD/MM/YYYY, DD-MM-YYYY, ISO strings, 12h/24h)
     const normalizeTimestamp = (rawVal: unknown): string => {
       if (!rawVal) return new Date().toISOString().replace('T', ' ').substring(0, 16);
       const s = String(rawVal).trim();
-      const dmy = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[\sT]+(\d{1,2}):(\d{1,2}))?/);
+      const dmy = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[\sT]+(\d{1,2}):(\d{1,2})(?::\d{1,2})?(?:\s*([ap]m))?)?/i);
       if (dmy) {
-        const [, d, m, y, h = '00', min = '00'] = dmy;
+        const [, d, m, y, rawH = '00', min = '00', ampm] = dmy;
+        let hNum = parseInt(rawH, 10);
+        if (ampm) {
+          const isPm = ampm.toLowerCase() === 'pm';
+          if (isPm && hNum < 12) hNum += 12;
+          if (!isPm && hNum === 12) hNum = 0;
+        }
         const pad = (n: string | number) => String(n).padStart(2, '0');
-        return `${y}-${pad(m)}-${pad(d)} ${pad(h)}:${pad(min)}`;
+        return `${y}-${pad(m)}-${pad(d)} ${pad(hNum)}:${pad(min)}`;
       }
       return s.slice(0, 30);
     };

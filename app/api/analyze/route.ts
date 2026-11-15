@@ -72,7 +72,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return attachResponseHeaders(NextResponse.json(cached), allowedOrigin, rate.remaining, 'HIT');
     }
 
-    const result = await runCivicAirIntelligence(sanitized, body.qualityReport, req.signal);
+    const result = await runCivicAirIntelligence(
+      sanitized,
+      body.qualityReport,
+      req.signal,
+      body.previousBriefing
+    );
     setCachedAnalysis(cacheKey, result);
 
     return attachResponseHeaders(NextResponse.json(result), allowedOrigin, rate.remaining, 'MISS');

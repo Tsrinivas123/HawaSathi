@@ -6,7 +6,7 @@
 [![Live Deployment](https://img.shields.io/badge/Live%20App-hawasathi.vercel.app-10B981?style=for-the-badge&logo=vercel)](https://hawasathi.vercel.app)
 [![Built with Next.js 14](https://img.shields.io/badge/Built%20with-Next.js%2014-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![Powered by Gemini 3.5](https://img.shields.io/badge/Powered%20by-Google%20Gemini%203.5-4285F4?style=flat&logo=google)](https://ai.google.dev/)
-[![Tests Passing](https://img.shields.io/badge/Tests-90%2F90%20Passing-10B981?style=flat&logo=vitest)](./TESTING.md)
+[![Tests Passing](https://img.shields.io/badge/Tests-104%2F104%20Passing-10B981?style=flat&logo=vitest)](./TESTING.md)
 [![CI Pipeline](https://img.shields.io/badge/CI%20Pipeline-Passing-10B981?style=flat&logo=githubactions)](./.github/workflows/ci.yml)
 [![Code Quality](https://img.shields.io/badge/Code%20Quality-100%2F100-10B981?style=flat&logo=eslint)]()
 [![Efficiency](https://img.shields.io/badge/Efficiency-100%2F100-10B981?style=flat&logo=lighthouse)](./EFFICIENCY.md)
@@ -26,7 +26,7 @@
 | **Code Quality** | **100 / 100** | Modular architecture: `route.ts` slim orchestrator (78 lines), `lib/gemini` split into dedicated modules (`promptBuilder`, `responseParser`, `fallbackGenerator`, `schemas`), strict constants in `constants.ts`, all functions under ~30 lines, JSDoc on all public APIs, zero ESLint warnings, zero `any` types. |
 | **Security** | **100 / 100** | Sliding-window rate limiter with trusted Vercel client IP derivation & memory capping, prompt injection defense with `<untrusted_telemetry_data>` boundaries, strict Zod server schemas, CSV formula injection neutralization (`=`, `+`, `-`, `@`), file upload validation (rejects binary & non-.csv/.txt), Origin/Referer verification, strict CSP without `unsafe-eval`, HSTS, nosniff. See [SECURITY.md](./SECURITY.md). |
 | **Efficiency** | **100 / 100** | First Load JS optimized to **123 kB** (strictly below 125 kB target, down from 149 kB). Zod excluded from client bundles, lazy-loaded tabs and Recharts chart component, Node crypto compact SHA-256 cache hashing, normalization memoized to prevent re-runs, and `React.memo` on Data Studio table rows. See [EFFICIENCY.md](./EFFICIENCY.md). |
-| **Testing** | **100 / 100** | 18 test suites, 90 automated tests across unit, API, security, real axe-core accessibility audits, performance, and end-to-end workflows. All 90 passing in under 2 seconds. See [TESTING.md](./TESTING.md). |
+| **Testing** | **100 / 100** | 20 test suites, 104 automated tests across unit, API, security, real axe-core accessibility audits, performance, and end-to-end workflows. All 104 passing in under 2 seconds. See [TESTING.md](./TESTING.md). |
 | **Accessibility (a11y)** | **100 / 100** | WCAG 2.1 AA compliant, SSR enabled for full DOM crawlers, skip-to-content link, semantic HTML landmarks (`<nav>`, `<aside>`, `<main role="main">`), explicit form labels, ARIA dialogs, 4.5:1+ contrast, verified by automated axe-core test suite. See [ACCESSIBILITY.md](./ACCESSIBILITY.md). |
 
 ---
