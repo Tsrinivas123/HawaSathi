@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Activity,
   Lock,
+  Users,
 } from 'lucide-react';
 import { StakeholderType } from '@/lib/types';
 import { saveStoredStakeholder } from '@/lib/storage';
@@ -53,7 +54,7 @@ const SettingsTabComponent: React.FC<SettingsTabProps> = ({
           <span>Active Stakeholder Persona</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="group" aria-label="Choose Stakeholder Profile">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" role="group" aria-label="Choose Stakeholder Profile">
           <button
             type="button"
             onClick={() => handleSelectStakeholder('ward_officer')}
@@ -105,6 +106,24 @@ const SettingsTabComponent: React.FC<SettingsTabProps> = ({
             <div className="text-xs font-bold text-navy-900">School Admin</div>
             <p className="text-[11px] text-slate-500 mt-1 leading-snug">
               Student pulmonary safety, indoor assembly relocations, parent WhatsApp alerts, and sick bay readiness.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSelectStakeholder('citizen')}
+            aria-pressed={stakeholder === 'citizen'}
+            aria-label="Set General Citizen Persona"
+            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+              stakeholder === 'citizen'
+                ? 'border-violet-500 bg-violet-50/30 ring-2 ring-violet-500/20'
+                : 'border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <Users className="w-5 h-5 text-violet-600 mb-2" aria-hidden="true" />
+            <div className="text-xs font-bold text-navy-900">General Citizen</div>
+            <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+              Personal health protection, N95 mask usage in transit corridors, and morning outdoor exercise guidelines.
             </p>
           </button>
         </div>

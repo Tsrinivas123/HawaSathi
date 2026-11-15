@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Building2,
   GraduationCap,
+  Users,
 } from 'lucide-react';
 import { StakeholderType, Language } from '@/lib/types';
 import { getTranslation } from '@/lib/i18n';
@@ -170,6 +171,26 @@ const SidebarComponent: React.FC<SidebarProps> = ({
                 {language === 'hi' ? 'स्कूल प्रशासक' : 'School Admin'}
               </div>
               <div className="text-[10px] text-slate-500">Campus Safety</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStakeholder('citizen')}
+            aria-pressed={stakeholder === 'citizen'}
+            aria-label="Switch to General Citizen Role"
+            className={`flex items-center space-x-2 text-xs px-2.5 py-2 rounded-lg transition-all text-left font-medium cursor-pointer ${
+              stakeholder === 'citizen'
+                ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                : 'hover:bg-slate-800/60 text-slate-400'
+            }`}
+          >
+            <Users className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <div className="truncate">
+              <div className="font-semibold text-slate-200">
+                {language === 'hi' ? 'आम नागरिक' : 'General Citizen'}
+              </div>
+              <div className="text-[10px] text-slate-500">Public Health</div>
             </div>
           </button>
         </div>

@@ -26,6 +26,7 @@ import {
   FileSpreadsheet,
   Edit3,
   HelpCircle,
+  Users,
 } from 'lucide-react';
 import { AnalysisResult, StakeholderType, AirRecord, DataQualityReport, Language } from '@/lib/types';
 import { getTranslation } from '@/lib/i18n';
@@ -298,6 +299,18 @@ const OverviewTabComponent: React.FC<OverviewTabProps> = ({
           icon: GraduationCap,
           actionText: language === 'hi' ? 'स्कूल सुरक्षा प्रोटोकॉल देखें' : 'View Campus Directives',
           actionTab: 'actions',
+        };
+      case 'citizen':
+        return {
+          role: getTranslation(language, 'citizen', 'General Citizen'),
+          title: language === 'hi' ? `नागरिक स्वास्थ्य सुरक्षा: ${hotspotStr}` : `Public Health Alert: ${hotspotStr}`,
+          desc:
+            language === 'hi'
+              ? 'सुबह के समय बाहरी व्यायाम सीमित करें। यात्रा के दौरान N95 मास्क पहनें और घर की खिड़कियां बंद रखें।'
+              : 'Limit morning outdoor jogging, equip N95 respirators near transit corridors, and maintain indoor dust suppression.',
+          icon: Users,
+          actionText: language === 'hi' ? 'स्वास्थ्य परामर्श देखें' : 'View Health Precautions',
+          actionTab: 'advisory',
         };
       default:
         return {

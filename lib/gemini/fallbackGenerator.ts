@@ -217,6 +217,49 @@ function buildSchoolAdminActions(allLocations: readonly string[]): StakeholderAc
 }
 
 /**
+ * Builds general citizen priority actions dynamically targeted to populated zones.
+ */
+function buildCitizenActions(allLocations: readonly string[]): StakeholderAction[] {
+  const targets = allLocations.slice(0, 2);
+
+  return [
+    {
+      id: 'ACT-C1',
+      stakeholder: 'citizen',
+      priority: 'High',
+      actionTitle: 'Limit Early Morning Outdoor Exercise & Strenuous Cardio',
+      description: 'Avoid jogging or heavy physical exertion outdoors between 06:00 and 09:30 when surface temperature inversions trap particulates.',
+      targetLocations: targets,
+      evidenceBasis: 'Elevated ambient particulate concentrations increase pulmonary exposure during heavy breathing.',
+      type: 'confirmed_action',
+      status: 'pending',
+    },
+    {
+      id: 'ACT-C2',
+      stakeholder: 'citizen',
+      priority: 'Medium',
+      actionTitle: 'Wear Particulate Respirator (N95) in Transit Corridors & Markets',
+      description: 'Equip an N95 or certified dust mask when commuting through major transit corridors or congested commercial intersections.',
+      targetLocations: targets,
+      evidenceBasis: 'Localized particulate hotspots observed along active transit and commercial zones.',
+      type: 'confirmed_action',
+      status: 'pending',
+    },
+    {
+      id: 'ACT-C3',
+      stakeholder: 'citizen',
+      priority: 'Low',
+      actionTitle: 'Practice Wet Mopping & Maintain Indoor Cross-Ventilation Hygiene',
+      description: 'Keep doors and windows facing main roads closed during peak traffic hours; use damp mopping to prevent dust resuspension.',
+      targetLocations: targets,
+      evidenceBasis: 'Resuspended road dust and ambient infiltration impact indoor residential air quality.',
+      type: 'confirmed_action',
+      status: 'pending',
+    },
+  ];
+}
+
+/**
  * Builds multi-stakeholder local actions based on identified hotspots and ingested records.
  */
 function buildStakeholderActions(
@@ -231,6 +274,7 @@ function buildStakeholderActions(
     ...buildWardOfficerActions(hotspots, allLocations, evidenceRecordIds),
     ...buildHousingSocietyActions(allLocations),
     ...buildSchoolAdminActions(allLocations),
+    ...buildCitizenActions(allLocations),
   ];
 }
 

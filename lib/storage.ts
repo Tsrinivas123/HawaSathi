@@ -24,6 +24,7 @@ const STORAGE_KEYS = {
   STAKEHOLDER: 'hawasathi_active_stakeholder_v1',
   LANGUAGE: 'hawasathi_active_language_v1',
   READING_LEVEL: 'hawasathi_active_reading_level_v1',
+  DATASET: 'hawasathi_active_dataset_v1',
 } as const;
 
 // In-memory fallback map for Node/SSR environments
@@ -130,7 +131,7 @@ export function clearBriefingHistory(): void {
 export function getStoredStakeholder(): StakeholderType | null {
   try {
     const val = getItem(STORAGE_KEYS.STAKEHOLDER);
-    if (val === 'ward_officer' || val === 'housing_society' || val === 'school_admin') {
+    if (val === 'ward_officer' || val === 'housing_society' || val === 'school_admin' || val === 'citizen') {
       return val;
     }
     return null;
@@ -145,6 +146,40 @@ export function getStoredStakeholder(): StakeholderType | null {
 export function saveStoredStakeholder(stakeholder: StakeholderType): void {
   try {
     setItem(STORAGE_KEYS.STAKEHOLDER, stakeholder);
+  } catch {
+    // Fail-safe
+  }
+}
+
+/**
+ * Retrieve saved active raw dataset
+ */
+export function getStoredDataset(): string | null {
+  try {
+    const val = getItem(STORAGE_KEYS.DATASET);
+    return val && val.trim().length > 0 ? val : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save active raw dataset to browser storage
+ */
+export function saveStoredDataset(csv: string): void {
+  try {
+    setItem(STORAGE_KEYS.DATASET, csv);
+  } catch {
+    // Fail-safe
+  }
+}
+
+/**
+ * Clear stored active dataset
+ */
+export function clearStoredDataset(): void {
+  try {
+    removeItem(STORAGE_KEYS.DATASET);
   } catch {
     // Fail-safe
   }

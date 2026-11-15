@@ -10,6 +10,9 @@ import {
   getStoredLanguage,
   saveStoredReadingLevel,
   getStoredReadingLevel,
+  saveStoredDataset,
+  getStoredDataset,
+  clearStoredDataset,
   clearBriefingHistory,
   StoredBriefing,
 } from '../lib/storage';
@@ -146,14 +149,28 @@ describe('Browser Storage & State Persistence Suite', () => {
     expect(retrieved?.[1].status).toBe('completed');
   });
 
-  it('should persist and retrieve active stakeholder, language, and reading level preferences', () => {
+  it('should persist and retrieve active stakeholder, language, and reading level preferences including citizen', () => {
     saveStoredStakeholder('school_admin');
     expect(getStoredStakeholder()).toBe('school_admin');
+
+    saveStoredStakeholder('citizen');
+    expect(getStoredStakeholder()).toBe('citizen');
 
     saveStoredLanguage('hi');
     expect(getStoredLanguage()).toBe('hi');
 
     saveStoredReadingLevel('child');
     expect(getStoredReadingLevel()).toBe('child');
+  });
+
+  it('should persist, retrieve, and clear raw air telemetry dataset', () => {
+    expect(getStoredDataset()).toBeNull();
+
+    const sampleCsv = 'Location,Ward,AQI\nMP Nagar,Ward 48,220';
+    saveStoredDataset(sampleCsv);
+    expect(getStoredDataset()).toBe(sampleCsv);
+
+    clearStoredDataset();
+    expect(getStoredDataset()).toBeNull();
   });
 });

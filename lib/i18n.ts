@@ -22,6 +22,7 @@ export const UI_TRANSLATIONS: Record<Language, Record<string, string>> = {
     wardOfficer: 'Ward Officer (ULB)',
     housingSociety: 'Housing Society (RWA)',
     schoolAdmin: 'School Administrator',
+    citizen: 'General Citizen',
 
     // TopNav
     recordsActive: 'Records Active',
@@ -73,6 +74,7 @@ export const UI_TRANSLATIONS: Record<Language, Record<string, string>> = {
     wardOfficer: 'वार्ड अधिकारी (नगर निगम)',
     housingSociety: 'आवास समिति (RWA)',
     schoolAdmin: 'स्कूल प्रशासक (School Admin)',
+    citizen: 'आम नागरिक (General Citizen)',
 
     // TopNav
     recordsActive: 'सक्रिय रिकॉर्ड्स',
@@ -124,6 +126,7 @@ export const UI_TRANSLATIONS: Record<Language, Record<string, string>> = {
     wardOfficer: 'Ward Officer (Nagar Nigam)',
     housingSociety: 'Housing Society (RWA)',
     schoolAdmin: 'School Administrator',
+    citizen: 'General Citizen (Public)',
 
     // TopNav
     recordsActive: 'Records Ingested',

@@ -16,6 +16,7 @@ import {
   MapPin,
   PlusCircle,
   X,
+  Users,
 } from 'lucide-react';
 import { StakeholderAction, StakeholderType } from '@/lib/types';
 
@@ -197,6 +198,20 @@ const LocalActionsTabComponent: React.FC<LocalActionsTabProps> = ({
               <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
               <span>School Admin</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setFilterStakeholder('citizen')}
+              aria-pressed={filterStakeholder === 'citizen'}
+              aria-label="Filter by General Citizen"
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                filterStakeholder === 'citizen'
+                  ? 'bg-white text-violet-700 shadow-2xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>General Citizen</span>
+            </button>
           </div>
         </div>
       </section>
@@ -359,6 +374,7 @@ const LocalActionsTabComponent: React.FC<LocalActionsTabProps> = ({
                     <option value="ward_officer">Ward Officer (ULB)</option>
                     <option value="housing_society">Housing Society (RWA)</option>
                     <option value="school_admin">School Administrator</option>
+                    <option value="citizen">General Citizen</option>
                   </select>
                 </div>
 

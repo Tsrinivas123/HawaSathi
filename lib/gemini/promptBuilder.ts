@@ -80,7 +80,7 @@ function buildSchemaFormatSpecification(
   }],
   "trends": { "increasing": ["string"], "decreasing": ["string"], "stable": ["string"], "spatialVariations": "string", "temporalPattern": "string" },
   "stakeholderActions": [{
-    "id": "ACT-1", "stakeholder": "ward_officer"|"housing_society"|"school_admin", "priority": "High"|"Medium"|"Low",
+    "id": "ACT-1", "stakeholder": "ward_officer"|"housing_society"|"school_admin"|"citizen", "priority": "High"|"Medium"|"Low",
     "actionTitle": "string", "description": "string", "targetLocations": ["string"], "evidenceBasis": "string",
     "type": "confirmed_action"|"investigative_hypothesis", "status": "pending"
   }],

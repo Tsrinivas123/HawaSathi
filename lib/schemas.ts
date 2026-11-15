@@ -21,7 +21,7 @@ export const HotspotFindingSchema = z.object({
 
 export const StakeholderActionSchema = z.object({
   id: z.string(),
-  stakeholder: z.enum(['ward_officer', 'housing_society', 'school_admin']),
+  stakeholder: z.enum(['ward_officer', 'housing_society', 'school_admin', 'citizen']),
   priority: z.enum(['High', 'Medium', 'Low']).default('Medium'),
   actionTitle: z.string(),
   description: z.string(),

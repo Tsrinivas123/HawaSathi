@@ -9,7 +9,12 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic';
 import { Sidebar } from '@/components/Sidebar';
 import { TopNav } from '@/components/TopNav';
-// OverviewTab and TraceModal lazy loaded for optimal First Load JS performance
+// Dynamic components loaded on demand
+const EntryGate = dynamic(
+  () => import('@/components/EntryGate').then((m) => m.EntryGate),
+  { loading: () => <TabLoadingSkeleton title="Entry Gate" /> }
+);
+
 const OverviewTab = dynamic(
   () => import('@/components/OverviewTab').then((m) => m.OverviewTab),
   { loading: () => <TabLoadingSkeleton title="Overview" /> }
@@ -38,6 +43,9 @@ import {
   saveStoredStakeholder,
   getStoredLanguage,
   saveStoredLanguage,
+  getStoredDataset,
+  saveStoredDataset,
+  clearStoredDataset,
 } from '@/lib/storage';
 
 // Clean loading placeholder for lazy-loaded tabs
@@ -91,6 +99,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [traceRecord, setTraceRecord] = useState<AirRecord | null>(null);
+  const [isDatasetConfirmed, setIsDatasetConfirmed] = useState<boolean>(false);
 
   // In-flight request cancellation reference to abort stale Gemini analysis requests
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -232,7 +241,34 @@ export default function Home() {
     []
   );
 
-  // Parse raw text into structured telemetry with cache to avoid re-normalization
+  // Step 4 Unlock: Ingestion confirmation from EntryGate
+  const handleConfirmIngestion = useCallback(
+    async (rawCsv: string, selectedAudience: StakeholderType) => {
+      try {
+        const { parseAndNormalizeData } = await import('@/lib/normalizer');
+        const result = parseAndNormalizeData(rawCsv);
+        if (result.records.length === 0) return;
+
+        lastNormalizedCsvRef.current = rawCsv;
+        lastNormalizedResultRef.current = result;
+
+        setRecords(result.records);
+        setQualityReport(result.qualityReport);
+        setStakeholder(selectedAudience);
+        saveStoredStakeholder(selectedAudience);
+        saveStoredDataset(rawCsv);
+        setIsDatasetConfirmed(true);
+        setActiveTab('overview');
+        runAnalysisWithRecords(result.records, result.qualityReport);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown parsing error';
+        alert(`Error ingesting telemetry: ${message}`);
+      }
+    },
+    [runAnalysisWithRecords]
+  );
+
+  // Parse raw text into structured telemetry (e.g. dataset replacement from Data Studio)
   const handleDataParsed = useCallback(
     async (rawCsv: string) => {
       try {
@@ -240,6 +276,8 @@ export default function Home() {
           const { records: cachedRecords, qualityReport: cachedReport } = lastNormalizedResultRef.current;
           setRecords(cachedRecords);
           setQualityReport(cachedReport);
+          saveStoredDataset(rawCsv);
+          setIsDatasetConfirmed(true);
           runAnalysisWithRecords(cachedRecords, cachedReport);
           return;
         }
@@ -250,6 +288,8 @@ export default function Home() {
         lastNormalizedResultRef.current = result;
         setRecords(result.records);
         setQualityReport(result.qualityReport);
+        saveStoredDataset(rawCsv);
+        setIsDatasetConfirmed(true);
         runAnalysisWithRecords(result.records, result.qualityReport);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown parsing error';
@@ -259,13 +299,32 @@ export default function Home() {
     [runAnalysisWithRecords]
   );
 
-  // Load saved user preferences (stakeholder persona and language) on mount
+  // Restore saved preferences and active dataset on mount ONLY if genuinely saved
   useEffect(() => {
     const savedS = getStoredStakeholder();
     if (savedS) setStakeholder(savedS);
     const savedL = getStoredLanguage();
     if (savedL) setLanguage(savedL);
-  }, []);
+
+    const savedDataset = getStoredDataset();
+    if (savedDataset && savedDataset.trim()) {
+      import('@/lib/normalizer').then(({ parseAndNormalizeData }) => {
+        try {
+          const result = parseAndNormalizeData(savedDataset);
+          if (result.records.length > 0) {
+            lastNormalizedCsvRef.current = savedDataset;
+            lastNormalizedResultRef.current = result;
+            setRecords(result.records);
+            setQualityReport(result.qualityReport);
+            setIsDatasetConfirmed(true);
+            runAnalysisWithRecords(result.records, result.qualityReport);
+          }
+        } catch {
+          // If saved dataset is corrupt, remain safely at the entry gate
+        }
+      });
+    }
+  }, [runAnalysisWithRecords]);
 
   // Explicit user action to load demo dataset
   const handleLoadSample = useCallback(async () => {
@@ -273,7 +332,7 @@ export default function Home() {
     handleDataParsed(BHOPAL_MESSY_SAMPLE_CSV);
   }, [handleDataParsed]);
 
-  // Explicit user action to reset workspace and clear dataset
+  // Explicit user action to reset workspace, clear dataset, and return to entry gate
   const handleResetWorkspace = useCallback(() => {
     if (
       typeof window !== 'undefined' &&
@@ -281,11 +340,13 @@ export default function Home() {
     ) {
       return;
     }
+    clearStoredDataset();
     setRecords([]);
     setQualityReport(null);
     setAnalysis(null);
     lastNormalizedCsvRef.current = '';
     lastNormalizedResultRef.current = null;
+    setIsDatasetConfirmed(false);
     setActiveTab('overview');
   }, []);
 
@@ -333,6 +394,18 @@ export default function Home() {
       runAnalysisWithRecords(records, qualityReport);
     }
   }, [qualityReport, records, runAnalysisWithRecords]);
+
+  // Mandatory Two-Input Entry Gate: Locked until audience selected AND dataset confirmed
+  if (!isDatasetConfirmed) {
+    return (
+      <EntryGate
+        onConfirmIngestion={handleConfirmIngestion}
+        initialStakeholder={stakeholder}
+        language={language}
+        onLanguageChange={handleSetLanguage}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#F5F8FA] overflow-hidden">

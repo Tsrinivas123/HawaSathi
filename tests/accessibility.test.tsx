@@ -18,6 +18,7 @@ import { render } from '@testing-library/react';
 import axe from 'axe-core';
 
 import { OverviewTab } from '../components/OverviewTab';
+import { EntryGate } from '../components/EntryGate';
 import { DataStudioTab } from '../components/DataStudioTab';
 import { AirIntelligenceTab } from '../components/AirIntelligenceTab';
 import { LocalActionsTab } from '../components/LocalActionsTab';
@@ -54,6 +55,18 @@ async function expectNoAxeViolations(container: HTMLElement) {
 describe('Axe-Core Real React Component Accessibility Suite', () => {
   const { records, qualityReport } = parseAndNormalizeData(BHOPAL_MESSY_SAMPLE_CSV);
   const analysis = generateDeterministicIntelligence(records, qualityReport, 241, 'Poor');
+
+  it('EntryGate: renders mandatory two-input gate with zero axe violations', async () => {
+    const { container } = render(
+      <EntryGate
+        onConfirmIngestion={() => {}}
+        initialStakeholder="ward_officer"
+        language="en"
+        onLanguageChange={() => {}}
+      />
+    );
+    await expectNoAxeViolations(container);
+  });
 
   it('OverviewTab (Onboarding Mode): renders with zero axe violations', async () => {
     const { container } = render(

@@ -17,6 +17,7 @@ import {
   HelpCircle,
   Database,
   Trash2,
+  Users,
 } from 'lucide-react';
 import { StakeholderType, Language } from '@/lib/types';
 import { getTranslation } from '@/lib/i18n';
@@ -68,6 +69,12 @@ const TopNavComponent: React.FC<TopNavProps> = ({
       color: 'text-emerald-500',
       badge: 'Campus Safety',
     },
+    citizen: {
+      name: getTranslation(language, 'citizen', 'General Citizen'),
+      icon: Users,
+      color: 'text-violet-500',
+      badge: 'Public Health',
+    },
   };
 
   const CurrentIcon = stakeholderLabels[stakeholder].icon;
@@ -94,6 +101,7 @@ const TopNavComponent: React.FC<TopNavProps> = ({
             <option value="ward_officer">{getTranslation(language, 'wardOfficer', 'Ward Officer')}</option>
             <option value="housing_society">{getTranslation(language, 'housingSociety', 'Housing Society')}</option>
             <option value="school_admin">{getTranslation(language, 'schoolAdmin', 'School Admin')}</option>
+            <option value="citizen">{getTranslation(language, 'citizen', 'General Citizen')}</option>
           </select>
         </div>
 

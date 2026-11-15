@@ -1,4 +1,4 @@
-export type StakeholderType = 'ward_officer' | 'housing_society' | 'school_admin';
+export type StakeholderType = 'ward_officer' | 'housing_society' | 'school_admin' | 'citizen';
 export type Language = 'en' | 'hi' | 'hinglish';
 export type ReadingLevel = 'citizen' | 'child' | 'official';
 
