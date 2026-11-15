@@ -37,10 +37,10 @@ const SettingsTabComponent: React.FC<SettingsTabProps> = ({
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <section aria-label="Settings Header" className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs">
-        <h2 className="text-base font-bold text-navy-900 flex items-center space-x-2">
+        <h1 className="text-base font-bold text-navy-900 flex items-center space-x-2">
           <Settings className="w-5 h-5 text-emerald-600" aria-hidden="true" />
           <span>Platform Settings & Persona Configuration</span>
-        </h2>
+        </h1>
         <p className="text-xs text-slate-500 mt-0.5">
           Configure the active civic stakeholder persona, telemetry thresholds, and AI reasoning parameters.
         </p>

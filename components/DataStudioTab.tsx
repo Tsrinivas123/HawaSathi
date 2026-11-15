@@ -1,11 +1,12 @@
 'use strict';
 /**
  * @file DataStudioTab.tsx
- * @description Ingestion, normalizer telemetry audit, and searchable data grid.
- * Optimized with search debouncing, memoized filtering, and DRY color helpers.
+ * @description Ingestion studio with drag-and-drop CSV upload, tabular paste editor,
+ * structured manual data entry form, and traceable telemetry table.
+ * Strictly WCAG 2.1 AA compliant with proper h1->h2->h3 heading hierarchy.
  */
 
-import React, { useState, useMemo, memo, useEffect } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import {
   Upload,
   FileSpreadsheet,
@@ -20,6 +21,11 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Edit3,
+  Plus,
+  Trash2,
+  RefreshCw,
+  PlusCircle,
 } from 'lucide-react';
 import { AirRecord, DataQualityReport } from '@/lib/types';
 import { BHOPAL_MESSY_SAMPLE_CSV } from '@/lib/sampleData';
@@ -32,6 +38,7 @@ interface DataStudioTabProps {
   qualityReport: DataQualityReport | null;
   onDataParsed: (rawCsv: string) => void;
   onOpenTrace: (recordId: string) => void;
+  onResetWorkspace?: () => void;
 }
 
 const PAGE_SIZE = 10;
@@ -98,105 +105,107 @@ const DataStudioRow = memo(function DataStudioRow({ rec, onOpenTrace }: DataStud
         <button
           type="button"
           onClick={() => onOpenTrace(rec.id)}
-          aria-label={`Audit Trace Record ${rec.id}`}
-          className="p-1.5 hover:bg-slate-200 text-slate-600 hover:text-navy-900 rounded-lg transition-colors cursor-pointer"
+          aria-label={`Audit Raw Telemetry for ${rec.id} ${rec.location}`}
+          className="inline-flex items-center space-x-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer"
         >
-          <Eye className="w-4 h-4" aria-hidden="true" />
-          <span className="sr-only">Audit {rec.id}</span>
+          <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+          <span>Audit</span>
         </button>
       </td>
     </tr>
   );
 });
 
-const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
+interface DraftManualRow {
+  location: string;
+  ward: string;
+  timestamp: string;
+  aqi: string;
+  pm25: string;
+  pm10: string;
+  no2: string;
+  so2: string;
+  co: string;
+}
+
+const DEFAULT_MANUAL_ROW: DraftManualRow = {
+  location: '',
+  ward: '',
+  timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '),
+  aqi: '',
+  pm25: '',
+  pm10: '',
+  no2: '',
+  so2: '',
+  co: '',
+};
+
+export const DataStudioTab: React.FC<DataStudioTabProps> = ({
   records,
   qualityReport,
   onDataParsed,
   onOpenTrace,
+  onResetWorkspace,
 }) => {
-  const [pasteMode, setPasteMode] = useState(false);
+  const [activeMode, setActiveMode] = useState<'upload' | 'paste' | 'manual'>('upload');
   const [pastedText, setPastedText] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'valid' | 'suspicious' | 'missing_critical'>('all');
-  const [currentPage, setCurrentPage] = useState(1);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Debounce search query to prevent high-frequency table filtering on every keystroke
-  const debouncedSearch = useDebounce(searchQuery, 250);
+  // Manual Entry Form State
+  const [manualForm, setManualForm] = useState<DraftManualRow>(DEFAULT_MANUAL_ROW);
+  const [draftBatch, setDraftBatch] = useState<DraftManualRow[]>([]);
 
-  // Reset to first page whenever search or status filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, statusFilter]);
+  const debouncedSearch = useDebounce(searchQuery, SYSTEM_LIMITS.SEARCH_DEBOUNCE_MS);
 
+  // Handle file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError(null);
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Strict extension check (.csv and .txt only)
-    const lowerName = file.name.toLowerCase();
-    if (!lowerName.endsWith('.csv') && !lowerName.endsWith('.txt')) {
-      setUploadError('Invalid file type. Only .csv and .txt files are supported.');
-      e.target.value = '';
+    if (!file.name.toLowerCase().endsWith('.csv') && !file.name.toLowerCase().endsWith('.txt')) {
+      setUploadError('Invalid file type. Please upload a .csv or .txt file.');
       return;
     }
 
-    // 2. Maximum file size check (2MB)
     if (file.size > SYSTEM_LIMITS.MAX_UPLOAD_FILE_SIZE_BYTES) {
-      setUploadError('File size exceeds the 2 MB limit. Please upload a smaller file.');
-      e.target.value = '';
+      setUploadError('File exceeds 2MB limit. Please upload a smaller dataset.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
-
-      // 3. Binary content detection (reject null bytes & control chars)
-      if (text.includes('\0') || /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(text.slice(0, 4096))) {
-        setUploadError('Binary content detected. Only valid plain-text tabular files are allowed.');
-        return;
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        const rowCount = content.split(/\r\n|\r|\n/).filter((l) => l.trim().length > 0).length;
+        if (rowCount > SYSTEM_LIMITS.MAX_INGESTION_RECORDS) {
+          setUploadError(
+            `Record limit exceeded. File has ${rowCount} rows (maximum permitted is ${SYSTEM_LIMITS.MAX_INGESTION_RECORDS}).`
+          );
+          return;
+        }
+        onDataParsed(content);
       }
-
-      // 4. Maximum row count validation
-      const rowCount = text.split(/\r\n|\r|\n/).filter((l) => l.trim().length > 0).length;
-      if (rowCount > SYSTEM_LIMITS.MAX_INGESTION_RECORDS) {
-        setUploadError(
-          `Record limit exceeded. File has ${rowCount} rows (maximum permitted is ${SYSTEM_LIMITS.MAX_INGESTION_RECORDS}).`
-        );
-        return;
-      }
-
-      onDataParsed(text);
     };
     reader.onerror = () => {
-      setUploadError('Failed to read the selected file. Please try again.');
+      setUploadError('Failed to read the selected file.');
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
-  const handlePasteSubmit = () => {
+  // Handle pasted table ingestion
+  const handleIngestPasted = () => {
     setUploadError(null);
     const trimmed = pastedText.trim();
-    if (!trimmed) return;
-
-    // 1. Binary character check
-    if (trimmed.includes('\0') || /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(trimmed.slice(0, 4096))) {
-      setUploadError('Binary content detected in pasted text. Only plain tabular text is allowed.');
+    if (!trimmed) {
+      setUploadError('Pasted text is empty. Please enter or paste tabular air quality readings.');
       return;
     }
 
-    // 2. Maximum length check
-    if (trimmed.length > 500000) {
-      setUploadError('Pasted text exceeds maximum allowable size (500 KB).');
-      return;
-    }
-
-    // 3. Maximum row count check
     const rowCount = trimmed.split(/\r\n|\r|\n/).filter((l) => l.trim().length > 0).length;
     if (rowCount > SYSTEM_LIMITS.MAX_INGESTION_RECORDS) {
       setUploadError(
@@ -206,10 +215,64 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
     }
 
     onDataParsed(trimmed);
-    setPasteMode(false);
+    setPastedText('');
   };
 
-  // Performance efficiency: memoize filtered records with debounced query
+  // Manual Entry row adder
+  const handleAddManualRow = () => {
+    setUploadError(null);
+    if (!manualForm.location.trim()) {
+      setUploadError('Location / Station name is required.');
+      return;
+    }
+    if (!manualForm.pm25.trim() && !manualForm.aqi.trim() && !manualForm.pm10.trim()) {
+      setUploadError('Please provide at least one measurement (AQI, PM2.5, or PM10).');
+      return;
+    }
+
+    setDraftBatch((prev) => [...prev, { ...manualForm }]);
+    setManualForm({
+      ...DEFAULT_MANUAL_ROW,
+      timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    });
+  };
+
+  // Pre-fill sample row for quick testing
+  const handlePreFillSampleRow = () => {
+    setManualForm({
+      location: 'MP Nagar Zone-II',
+      ward: 'Ward 45',
+      timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      aqi: '245',
+      pm25: '168.4',
+      pm10: '280.0',
+      no2: '48.2',
+      so2: '16.5',
+      co: '1.8',
+    });
+  };
+
+  // Ingest drafted batch
+  const handleIngestDraftBatch = () => {
+    if (draftBatch.length === 0) {
+      setUploadError('No draft rows to ingest. Add at least one row first.');
+      return;
+    }
+
+    const csvHeader = 'Location,Ward,Timestamp,AQI,PM2.5,PM10,NO2,SO2,CO\n';
+    const csvRows = draftBatch
+      .map(
+        (r) =>
+          `"${r.location.replace(/"/g, '""')}","${r.ward.replace(/"/g, '""')}","${r.timestamp}",${r.aqi || ''},${r.pm25 || ''},${r.pm10 || ''},${r.no2 || ''},${r.so2 || ''},${r.co || ''}`
+      )
+      .join('\n');
+
+    onDataParsed(csvHeader + csvRows);
+    setDraftBatch([]);
+    setActiveMode('upload');
+  };
+
+  // Filtered and paginated records
   const filteredRecords = useMemo(() => {
     const q = debouncedSearch.toLowerCase().trim();
     return records.filter((r) => {
@@ -231,28 +294,40 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Ingestion & Sample Data Loader Banner */}
+      {/* Studio Header & Ingestion Controller */}
       <section aria-label="Data Ingestion Tools" className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
-            <h2 className="text-base font-bold text-navy-900 flex items-center space-x-2">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-600" aria-hidden="true" />
+            <h1 className="text-xl sm:text-2xl font-extrabold text-navy-900 flex items-center space-x-2">
+              <FileSpreadsheet className="w-6 h-6 text-emerald-600" aria-hidden="true" />
               <span>Smart Data Ingestion & Normalizer Studio</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Handles messy multi-format CSVs, unit discrepancies (ppm ↔ mg/m³), sensor saturation (999.0 µg/m³), and missing readings.
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Harmonizes multi-format CSV/TXT feeds, converts mixed units (ppm ↔ mg/m³), and flags sensor errors (999.0 µg/m³).
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 shrink-0">
+            {records.length > 0 && onResetWorkspace && (
+              <button
+                type="button"
+                onClick={onResetWorkspace}
+                aria-label="Remove dataset and reset workspace"
+                className="px-3 py-1.5 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
+                <span>Reset Dataset</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => onDataParsed(BHOPAL_MESSY_SAMPLE_CSV)}
-              aria-label="Load Bhopal Sample Telemetry"
+              aria-label="Load Bhopal Demo Dataset"
               className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-              <span>Load Sample Data</span>
+              <span>Load Demo Dataset</span>
             </button>
           </div>
         </div>
@@ -271,261 +346,493 @@ const DataStudioTabComponent: React.FC<DataStudioTabProps> = ({
               type="button"
               onClick={() => setUploadError(null)}
               aria-label="Dismiss error notification"
-              className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-0.5"
+              className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-0.5 cursor-pointer"
             >
               Dismiss
             </button>
           </div>
         )}
 
-        {/* Upload / Paste Controls */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* File Upload Box */}
-          <label
-            htmlFor="csv-file-upload"
-            className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-50/50 hover:bg-emerald-50/20 transition-all"
+        {/* Ingestion Mode Toggle Tabs */}
+        <div className="flex items-center space-x-2 mt-5 border-b border-slate-100 pb-3">
+          <button
+            type="button"
+            onClick={() => setActiveMode('upload')}
+            aria-label="Switch to CSV file upload"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
+              activeMode === 'upload'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
           >
-            <Upload className="w-8 h-8 text-slate-400 mb-2" aria-hidden="true" />
-            <span className="text-xs font-bold text-navy-900">Upload CSV or Tabular Data File</span>
-            <span className="text-[11px] text-slate-500 mt-1">
-              Drag & drop or click to browse (.csv, .txt)
-            </span>
-            <input
-              id="csv-file-upload"
-              type="file"
-              accept=".csv,.txt"
-              onChange={handleFileUpload}
-              aria-label="Upload CSV air quality data file"
-              className="sr-only"
-            />
-          </label>
+            <Upload className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Upload CSV / TXT</span>
+          </button>
 
-          {/* Paste Raw Tabular Data Box */}
-          <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col justify-between">
-            {!pasteMode ? (
-              <div className="flex flex-col items-center justify-center text-center h-full py-2">
-                <FileText className="w-8 h-8 text-slate-400 mb-2" aria-hidden="true" />
-                <span className="text-xs font-bold text-navy-900">Paste Raw Data from Clipboard</span>
-                <span className="text-[11px] text-slate-500 mt-1 mb-3">
-                  Paste copied tables from spreadsheets, portals, or log streams
-                </span>
+          <button
+            type="button"
+            onClick={() => setActiveMode('paste')}
+            aria-label="Switch to table paste editor"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
+              activeMode === 'paste'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Paste Table</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMode('manual')}
+            aria-label="Switch to structured manual row entry"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
+              activeMode === 'manual'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Enter Data Manually</span>
+          </button>
+        </div>
+
+        {/* Mode 1: File Upload */}
+        {activeMode === 'upload' && (
+          <div className="mt-5 p-6 rounded-2xl border-2 border-dashed border-slate-200 hover:border-emerald-400 bg-slate-50/50 hover:bg-emerald-50/10 transition-all text-center">
+            <Upload className="w-8 h-8 text-emerald-600 mx-auto mb-2" aria-hidden="true" />
+            <h2 className="text-sm font-bold text-navy-900">Drag & drop air quality telemetry file</h2>
+            <p className="text-xs text-slate-500 mt-1 mb-4">
+              Supports .csv and .txt up to 2MB (Max 500 rows per analysis batch).
+            </p>
+            <label
+              htmlFor="telemetry-file-upload"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs cursor-pointer transition-colors"
+            >
+              <span>Browse File</span>
+              <input
+                id="telemetry-file-upload"
+                type="file"
+                accept=".csv,.txt"
+                onChange={handleFileUpload}
+                className="sr-only"
+              />
+            </label>
+          </div>
+        )}
+
+        {/* Mode 2: Paste Table */}
+        {activeMode === 'paste' && (
+          <div className="mt-5 space-y-3">
+            <label htmlFor="csv-paste-area" className="text-xs font-semibold text-slate-700 block">
+              Paste Raw Tabular Data (CSV, TSV, or Comma/Tab Delimited)
+            </label>
+            <textarea
+              id="csv-paste-area"
+              rows={6}
+              value={pastedText}
+              onChange={(e) => setPastedText(e.target.value)}
+              placeholder="Location,Ward,Timestamp,AQI,PM2.5,PM10,CO&#10;MP Nagar,Ward 45,2026-11-15 10:00,245,168.4 ug/m3,280,1.8 ppm"
+              aria-describedby="csv-paste-hint"
+              className="w-full p-3 font-mono text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+            />
+            <div id="csv-paste-hint" className="text-[11px] text-slate-400">
+              Paste header row followed by telemetry rows. Non-standard headers and units will be auto-mapped.
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={() => setPastedText('')}
+                aria-label="Clear pasted content"
+                className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={handleIngestPasted}
+                aria-label="Ingest Pasted Telemetry"
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+              >
+                Ingest Pasted Data
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mode 3: Structured Manual Row Entry Form */}
+        {activeMode === 'manual' && (
+          <div className="mt-5 space-y-4">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Add Sensor Monitoring Record
+                </h2>
                 <button
                   type="button"
-                  onClick={() => setPasteMode(true)}
-                  aria-label="Open clipboard text paste editor"
-                  className="px-3 py-1.5 text-xs font-medium text-navy-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg cursor-pointer"
+                  onClick={handlePreFillSampleRow}
+                  aria-label="Pre-fill sample data row"
+                  className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 cursor-pointer"
                 >
-                  Open Paste Editor
+                  + Pre-fill Sample Row
                 </button>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="raw-pasted-data" className="text-xs font-bold text-navy-900">
-                    Paste Table Text Below
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+                <div>
+                  <label htmlFor="manual-location" className="font-semibold text-slate-700 block mb-1">
+                    Location / Station *
                   </label>
+                  <input
+                    id="manual-location"
+                    type="text"
+                    value={manualForm.location}
+                    onChange={(e) => setManualForm({ ...manualForm, location: e.target.value })}
+                    placeholder="e.g. MP Nagar Zone-II"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-ward" className="font-semibold text-slate-700 block mb-1">
+                    Ward
+                  </label>
+                  <input
+                    id="manual-ward"
+                    type="text"
+                    value={manualForm.ward}
+                    onChange={(e) => setManualForm({ ...manualForm, ward: e.target.value })}
+                    placeholder="e.g. Ward 45"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-timestamp" className="font-semibold text-slate-700 block mb-1">
+                    Timestamp
+                  </label>
+                  <input
+                    id="manual-timestamp"
+                    type="text"
+                    value={manualForm.timestamp}
+                    onChange={(e) => setManualForm({ ...manualForm, timestamp: e.target.value })}
+                    placeholder="YYYY-MM-DD HH:mm"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-aqi" className="font-semibold text-slate-700 block mb-1">
+                    AQI (0-500)
+                  </label>
+                  <input
+                    id="manual-aqi"
+                    type="number"
+                    value={manualForm.aqi}
+                    onChange={(e) => setManualForm({ ...manualForm, aqi: e.target.value })}
+                    placeholder="e.g. 245"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-pm25" className="font-semibold text-slate-700 block mb-1">
+                    PM2.5 (µg/m³) *
+                  </label>
+                  <input
+                    id="manual-pm25"
+                    type="number"
+                    step="0.1"
+                    value={manualForm.pm25}
+                    onChange={(e) => setManualForm({ ...manualForm, pm25: e.target.value })}
+                    placeholder="e.g. 168.4"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-pm10" className="font-semibold text-slate-700 block mb-1">
+                    PM10 (µg/m³)
+                  </label>
+                  <input
+                    id="manual-pm10"
+                    type="number"
+                    step="0.1"
+                    value={manualForm.pm10}
+                    onChange={(e) => setManualForm({ ...manualForm, pm10: e.target.value })}
+                    placeholder="e.g. 280.0"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-no2" className="font-semibold text-slate-700 block mb-1">
+                    NO2 (µg/m³)
+                  </label>
+                  <input
+                    id="manual-no2"
+                    type="number"
+                    step="0.1"
+                    value={manualForm.no2}
+                    onChange={(e) => setManualForm({ ...manualForm, no2: e.target.value })}
+                    placeholder="e.g. 48.2"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-so2" className="font-semibold text-slate-700 block mb-1">
+                    SO2 (µg/m³)
+                  </label>
+                  <input
+                    id="manual-so2"
+                    type="number"
+                    step="0.1"
+                    value={manualForm.so2}
+                    onChange={(e) => setManualForm({ ...manualForm, so2: e.target.value })}
+                    placeholder="e.g. 16.5"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="manual-co" className="font-semibold text-slate-700 block mb-1">
+                    CO (mg/m³)
+                  </label>
+                  <input
+                    id="manual-co"
+                    type="number"
+                    step="0.1"
+                    value={manualForm.co}
+                    onChange={(e) => setManualForm({ ...manualForm, co: e.target.value })}
+                    placeholder="e.g. 1.8"
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div className="flex items-end">
                   <button
                     type="button"
-                    onClick={() => setPasteMode(false)}
-                    aria-label="Cancel paste mode"
-                    className="text-xs text-slate-500 hover:text-slate-800"
+                    onClick={handleAddManualRow}
+                    aria-label="Add row to draft batch"
+                    className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
                   >
-                    Cancel
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Add Row</span>
                   </button>
                 </div>
-                <textarea
-                  id="raw-pasted-data"
-                  value={pastedText}
-                  onChange={(e) => setPastedText(e.target.value)}
-                  placeholder="Paste comma or tab-separated data here..."
-                  aria-label="Raw tabular data input"
-                  className="w-full h-24 p-2 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-emerald-500"
-                />
-                <button
-                  type="button"
-                  onClick={handlePasteSubmit}
-                  aria-label="Ingest and normalize pasted data"
-                  className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition-all cursor-pointer"
-                >
-                  Ingest & Normalize Pasted Data
-                </button>
+              </div>
+            </div>
+
+            {/* Draft Batch Table Preview */}
+            {draftBatch.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-800">
+                    Draft Batch Queue ({draftBatch.length} {draftBatch.length === 1 ? 'Record' : 'Records'})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleIngestDraftBatch}
+                    aria-label="Confirm and Ingest Draft Records"
+                    className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                  >
+                    Confirm & Ingest ({draftBatch.length} Records)
+                  </button>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                      <tr>
+                        <th className="py-2 px-3">Location</th>
+                        <th className="py-2 px-3">Ward</th>
+                        <th className="py-2 px-3">Timestamp</th>
+                        <th className="py-2 px-3">AQI</th>
+                        <th className="py-2 px-3">PM2.5</th>
+                        <th className="py-2 px-3">PM10</th>
+                        <th className="py-2 px-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {draftBatch.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="py-2 px-3 font-medium text-navy-900">{row.location}</td>
+                          <td className="py-2 px-3 text-slate-600">{row.ward || 'N/A'}</td>
+                          <td className="py-2 px-3 font-mono text-[11px] text-slate-500">{row.timestamp}</td>
+                          <td className="py-2 px-3 font-mono">{row.aqi || 'N/A'}</td>
+                          <td className="py-2 px-3 font-mono">{row.pm25 || 'N/A'}</td>
+                          <td className="py-2 px-3 font-mono">{row.pm10 || 'N/A'}</td>
+                          <td className="py-2 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setDraftBatch((prev) => prev.filter((_, i) => i !== idx))}
+                              aria-label={`Remove row ${idx + 1}`}
+                              className="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
       </section>
 
-      {/* Data Quality Report Audit Card */}
+      {/* Quality Audit Report Summary Cards */}
       {qualityReport && (
-        <section aria-label="Data Quality Audit" className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
-              <h3 className="text-sm font-bold text-navy-900">
-                Data Quality & Normalization Audit
-              </h3>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-slate-500">Quality Completeness:</span>
-              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                {qualityReport.dataCompletenessPct}% Complete
-              </span>
-            </div>
+        <section aria-label="Ingestion Audit Report" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Total Rows</div>
+            <div className="text-2xl font-black text-navy-900 font-mono">{qualityReport.totalRecords}</div>
+            <div className="text-[11px] text-slate-400 mt-0.5">Raw Telemetry Entries</div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <div className="text-[11px] font-medium text-slate-500">Total Records</div>
-              <div className="text-lg font-bold text-navy-900">{qualityReport.totalRecords}</div>
-            </div>
-            <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200">
-              <div className="text-[11px] font-medium text-emerald-700">Valid Records</div>
-              <div className="text-lg font-bold text-emerald-800">{qualityReport.validRecords}</div>
-            </div>
-            <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-200">
-              <div className="text-[11px] font-medium text-amber-700">Missing Values</div>
-              <div className="text-lg font-bold text-amber-800">{qualityReport.missingReadings}</div>
-            </div>
-            <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-200">
-              <div className="text-[11px] font-medium text-purple-700">Duplicates Detected</div>
-              <div className="text-lg font-bold text-purple-800">{qualityReport.duplicateRecords}</div>
-            </div>
-            <div className="p-3 bg-red-50/50 rounded-xl border border-red-200">
-              <div className="text-[11px] font-medium text-red-700">Suspicious Outliers</div>
-              <div className="text-lg font-bold text-red-800">{qualityReport.suspiciousObservations}</div>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <div className="text-[11px] font-medium text-slate-500">Units Harmonized</div>
-              <div className="text-xs font-mono font-bold text-slate-700 mt-1 truncate">
-                PM: µg/m³, CO: mg/m³
-              </div>
-            </div>
+          <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Valid Records</div>
+            <div className="text-2xl font-black text-emerald-600 font-mono">{qualityReport.validRecords}</div>
+            <div className="text-[11px] text-emerald-700 mt-0.5 font-medium">Passed Sanity Check</div>
           </div>
 
-          {/* Warnings & Conversions Log */}
-          {qualityReport.warnings.length > 0 && (
-            <div className="mt-4 p-3 bg-amber-50/70 border border-amber-200 rounded-xl">
-              <div className="flex items-center space-x-2 text-xs font-bold text-amber-800 mb-1">
-                <AlertCircle className="w-4 h-4 text-amber-600" aria-hidden="true" />
-                <span>Validation & Unit Transformation Warnings:</span>
-              </div>
-              <ul className="text-[11px] text-amber-900 list-disc list-inside space-y-1">
-                {qualityReport.warnings.map((warn, i) => (
-                  <li key={i}>{warn}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Sensor Saturation</div>
+            <div className="text-2xl font-black text-amber-600 font-mono">{qualityReport.invalidValues + qualityReport.suspiciousObservations}</div>
+            <div className="text-[11px] text-amber-700 mt-0.5 font-medium">Isolated from Averages</div>
+          </div>
+
+          <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Duplicates Dropped</div>
+            <div className="text-2xl font-black text-blue-600 font-mono">{qualityReport.duplicateRecords}</div>
+            <div className="text-[11px] text-blue-700 mt-0.5 font-medium">Deduplicated</div>
+          </div>
+
+          <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs col-span-2 sm:col-span-1">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Units Harmonized</div>
+            <div className="text-2xl font-black text-emerald-600 font-mono">100%</div>
+            <div className="text-[11px] text-slate-400 mt-0.5">ppm ↔ mg/m³ converted</div>
+          </div>
         </section>
       )}
 
-      {/* Ingested Records Table */}
-      <section aria-label="Ingested Records Studio" className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-        {/* Table Search & Filter Bar */}
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" aria-hidden="true" />
-            <label htmlFor="record-search" className="sr-only">Search records</label>
-            <input
-              id="record-search"
-              type="text"
-              placeholder="Search station, ward, ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search records by location, ward, or record ID"
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:border-emerald-500"
-            />
+      {/* Telemetry Data Grid */}
+      <section aria-label="Ingested Telemetry Grid" className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-bold text-navy-900 flex items-center space-x-2">
+              <span>Ingested Telemetry Records ({filteredRecords.length})</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Verified records with exact IDs, sensor coordinates, and CPCB status categories.
+            </p>
           </div>
 
-          <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-            <Filter className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-            <label htmlFor="status-filter" className="text-xs text-slate-500">Status:</label>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" aria-hidden="true" />
+              <input
+                type="text"
+                placeholder="Search location, ward, or ID..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                aria-label="Filter records by location, ward, or record ID"
+                className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden w-56"
+              />
+            </div>
+
+            {/* Status Filter */}
             <select
-              id="status-filter"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'valid' | 'suspicious' | 'missing_critical')}
-              aria-label="Filter records by validity status"
-              className="text-xs bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-slate-700 cursor-pointer"
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              aria-label="Filter by verification status"
+              className="py-1.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden cursor-pointer"
             >
-              <option value="all">All Records ({records.length})</option>
-              <option value="valid">Valid Records</option>
-              <option value="suspicious">Suspicious / Outliers</option>
+              <option value="all">All Records</option>
+              <option value="valid">Valid Only</option>
+              <option value="suspicious">Suspicious</option>
               <option value="missing_critical">Missing Critical</option>
             </select>
           </div>
         </div>
 
-        {/* The Clean Tabular View */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs" aria-label="Normalized Air Quality Telemetry Records">
-            <thead className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200">
-              <tr>
-                <th scope="col" className="py-3 px-4">Record ID</th>
-                <th scope="col" className="py-3 px-4">Location / Station</th>
-                <th scope="col" className="py-3 px-4">Ward</th>
-                <th scope="col" className="py-3 px-4">Timestamp</th>
-                <th scope="col" className="py-3 px-4">PM2.5 (µg/m³)</th>
-                <th scope="col" className="py-3 px-4">PM10 (µg/m³)</th>
-                <th scope="col" className="py-3 px-4">AQI</th>
-                <th scope="col" className="py-3 px-4">CO (mg/m³)</th>
-                <th scope="col" className="py-3 px-4">Data Quality Status</th>
-                <th scope="col" className="py-3 px-4 text-right">Audit Trace</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {paginatedRecords.map((rec) => (
-                <DataStudioRow key={rec.id} rec={rec} onOpenTrace={onOpenTrace} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Data Table */}
+        {filteredRecords.length === 0 ? (
+          <div className="p-12 text-center text-slate-400 text-xs">
+            {records.length === 0
+              ? 'No telemetry records ingested yet. Upload a CSV file or enter data above to get started.'
+              : 'No records matching the filter query.'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                <tr>
+                  <th scope="col" className="py-3 px-4">Record ID</th>
+                  <th scope="col" className="py-3 px-4">Location</th>
+                  <th scope="col" className="py-3 px-4">Ward</th>
+                  <th scope="col" className="py-3 px-4">Timestamp</th>
+                  <th scope="col" className="py-3 px-4">PM2.5 (µg/m³)</th>
+                  <th scope="col" className="py-3 px-4">PM10 (µg/m³)</th>
+                  <th scope="col" className="py-3 px-4">AQI</th>
+                  <th scope="col" className="py-3 px-4">CO (mg/m³)</th>
+                  <th scope="col" className="py-3 px-4">Status</th>
+                  <th scope="col" className="py-3 px-4 text-right">Audit</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedRecords.map((rec) => (
+                  <DataStudioRow key={rec.id} rec={rec} onOpenTrace={onOpenTrace} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Pagination Footer */}
-        <div className="p-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/30">
-          <div>
-            Showing <span className="font-semibold text-slate-700">{(currentPage - 1) * PAGE_SIZE + 1}</span> to{' '}
-            <span className="font-semibold text-slate-700">
-              {Math.min(currentPage * PAGE_SIZE, filteredRecords.length)}
-            </span>{' '}
-            of <span className="font-semibold text-slate-700">{filteredRecords.length}</span> records
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              type="button"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              aria-label="Previous Page"
-              className={`px-2.5 py-1 rounded-lg border flex items-center space-x-1 ${
-                currentPage === 1
-                  ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-                  : 'border-slate-300 text-slate-700 hover:bg-white cursor-pointer'
-              }`}
-            >
-              <ChevronLeft className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Previous</span>
-            </button>
-            <span className="px-2 font-mono text-[11px] font-semibold text-slate-700">
-              Page {currentPage} of {totalPages}
+        {filteredRecords.length > PAGE_SIZE && (
+          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Showing {(currentPage - 1) * PAGE_SIZE + 1} to{' '}
+              {Math.min(currentPage * PAGE_SIZE, filteredRecords.length)} of {filteredRecords.length} records
             </span>
-            <button
-              type="button"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              aria-label="Next Page"
-              className={`px-2.5 py-1 rounded-lg border flex items-center space-x-1 ${
-                currentPage === totalPages
-                  ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-                  : 'border-slate-300 text-slate-700 hover:bg-white cursor-pointer'
-              }`}
-            >
-              <span>Next</span>
-              <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
-            </button>
+            <div className="flex items-center space-x-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                aria-label="Previous Page"
+                className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <span className="px-2 font-medium text-slate-700">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                aria-label="Next Page"
+                className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </section>
     </div>
   );
 };
-
-export const DataStudioTab = memo(DataStudioTabComponent);

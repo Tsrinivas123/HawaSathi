@@ -7,19 +7,27 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:ci": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:a11y": "vitest run tests/accessibility.test.ts",
+    "test:a11y": "vitest run tests/accessibility.test.tsx",
     "test:security": "vitest run tests/security.test.ts",
     "test:perf": "vitest run tests/efficiency.test.ts",
     "test:e2e": "vitest run tests/e2e.test.ts",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "npm run lint && npm run typecheck && npm run test",
     "jest": "vitest run"
+  },
+  "homepage": "https://hawasathi.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tsrinivas123/HawaSathi.git"
   },
   "dependencies": {
     "lucide-react": "^0.475.0",
-    "next": "^14.2.24",
+    "next": "^15.5.29",
     "papaparse": "^5.5.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -28,16 +36,20 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.4.6",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^20.17.24",
     "@types/papaparse": "^5.3.15",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^6.3.0",
     "@vitest/coverage-v8": "^5.1.0",
     "autoprefixer": "^10.4.20",
     "axe-core": "^4.14.0",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.24",
+    "eslint-config-next": "^15.5.29",
     "jsdom": "^24.1.3",
     "postcss": "^8.5.3",
     "prettier": "^3.10.1",
@@ -47,6 +59,7 @@
     "vitest": "^5.1.0"
   },
   "overrides": {
-    "postcss": "^8.5.3"
+    "postcss": "^8.5.3",
+    "minimatch": "^10.0.1"
   }
 }

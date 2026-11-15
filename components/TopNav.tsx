@@ -1,7 +1,7 @@
 'use strict';
 /**
  * @file TopNav.tsx
- * @description Header bar with persona switching, multilingual selector, and AI trigger.
+ * @description Header bar with persona switching, multilingual selector, active dataset status, and AI trigger.
  * Wrapped in React.memo for high rendering efficiency.
  */
 
@@ -15,6 +15,8 @@ import {
   Cpu,
   RefreshCw,
   HelpCircle,
+  Database,
+  Trash2,
 } from 'lucide-react';
 import { StakeholderType, Language } from '@/lib/types';
 import { getTranslation } from '@/lib/i18n';
@@ -29,6 +31,7 @@ interface TopNavProps {
   hasData: boolean;
   recordCount: number;
   onToggleGuide?: () => void;
+  onResetWorkspace?: () => void;
 }
 
 const TopNavComponent: React.FC<TopNavProps> = ({
@@ -41,6 +44,7 @@ const TopNavComponent: React.FC<TopNavProps> = ({
   hasData,
   recordCount,
   onToggleGuide,
+  onResetWorkspace,
 }) => {
   const stakeholderLabels: Record<
     StakeholderType,
@@ -93,15 +97,37 @@ const TopNavComponent: React.FC<TopNavProps> = ({
           </select>
         </div>
 
-        {/* Live Data Badge */}
-        {hasData && (
+        {/* Dataset Status Indicator */}
+        {!hasData ? (
           <div
             role="status"
-            aria-live="polite"
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-xs font-medium"
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
-            <span>{recordCount} {getTranslation(language, 'recordsActive', 'Records Active')}</span>
+            <span className="w-2 h-2 rounded-full bg-amber-500" aria-hidden="true"></span>
+            <span>{language === 'hi' ? 'कोई डेटा नहीं' : 'No Active Dataset'}</span>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <div
+              role="status"
+              aria-live="polite"
+              className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-xs font-medium"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
+              <span>{recordCount} {getTranslation(language, 'recordsActive', 'Records Active')}</span>
+            </div>
+            {onResetWorkspace && (
+              <button
+                type="button"
+                onClick={onResetWorkspace}
+                aria-label="Clear active dataset and reset workspace"
+                className="hidden sm:inline-flex items-center space-x-1 px-2 py-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 text-xs font-medium border border-transparent hover:border-red-200 transition-colors"
+                title="Clear Dataset"
+              >
+                <Trash2 className="w-3 h-3" aria-hidden="true" />
+                <span className="text-[11px]">{language === 'hi' ? 'हटाएं' : 'Clear'}</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -138,8 +164,8 @@ const TopNavComponent: React.FC<TopNavProps> = ({
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as Language)}
-            aria-label="Select Interface Language"
-            className="bg-transparent focus:outline-hidden cursor-pointer font-bold text-slate-800"
+            aria-label="Choose Studio Display Language"
+            className="text-xs bg-transparent focus:outline-hidden font-semibold cursor-pointer"
           >
             <option value="en">English</option>
             <option value="hi">हिंदी (Hindi)</option>
@@ -147,30 +173,28 @@ const TopNavComponent: React.FC<TopNavProps> = ({
           </select>
         </div>
 
-        {/* Primary Action Button */}
+        {/* Run AI Analysis Action Button */}
         <button
           type="button"
           onClick={onRunAnalysis}
-          disabled={!hasData || isAnalyzing}
-          aria-label={isAnalyzing ? 'Analyzing Air Data' : 'Generate AI Briefing with Google Gemini'}
-          className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all ${
-            !hasData
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : isAnalyzing
-              ? 'bg-emerald-600 text-white cursor-wait opacity-90'
-              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20 active:scale-95 cursor-pointer'
+          disabled={isAnalyzing || !hasData}
+          aria-label={isAnalyzing ? 'Analyzing with Google Gemini' : 'Run Live Gemini Air Intelligence'}
+          className={`flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer ${
+            isAnalyzing || !hasData
+              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 hover:shadow-md'
           }`}
         >
           {isAnalyzing ? (
             <>
               <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-              <span>{getTranslation(language, 'analyzingData', 'Analyzing...')}</span>
+              <span>{getTranslation(language, 'analyzing', 'Analyzing...')}</span>
             </>
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">{getTranslation(language, 'generateBriefing', 'Generate AI Briefing')}</span>
-              <span className="sm:hidden">Briefing</span>
+              <span className="hidden sm:inline">{getTranslation(language, 'runAiBriefing', 'Run Gemini Brief')}</span>
+              <span className="sm:hidden">{language === 'hi' ? 'एआई' : 'AI'}</span>
             </>
           )}
         </button>

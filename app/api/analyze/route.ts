@@ -62,7 +62,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const headerError = validateHeaders(req);
     if (headerError) return headerError;
 
-    const body = await req.json();
+    // Safely parse JSON payload with 400 rejection for malformed syntax
+    let body: { records?: unknown; qualityReport?: unknown; previousBriefing?: unknown };
+    try {
+      body = await req.json();
+    } catch (_parseErr) {
+      return NextResponse.json(
+        { error: 'Malformed or invalid JSON payload.' },
+        { status: 400 }
+      );
+    }
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Request body must be a JSON object.' }, { status: 400 });
+    }
+
     const { errorResponse, sanitized } = validateAndSanitizeRecords(body.records);
     if (errorResponse) return errorResponse;
 
@@ -74,9 +88,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const result = await runCivicAirIntelligence(
       sanitized,
-      body.qualityReport,
+      body.qualityReport as any,
       req.signal,
-      body.previousBriefing
+      body.previousBriefing as any
     );
     setCachedAnalysis(cacheKey, result);
 

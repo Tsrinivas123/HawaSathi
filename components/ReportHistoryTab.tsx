@@ -106,10 +106,10 @@ const ReportHistoryTabComponent: React.FC<ReportHistoryTabProps> = ({ analysis }
       {/* Header */}
       <section aria-label="Briefing Comparison Header" className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-navy-900 flex items-center space-x-2">
+          <h1 className="text-base font-bold text-navy-900 flex items-center space-x-2">
             <GitCompare className="w-5 h-5 text-emerald-600" aria-hidden="true" />
             <span>Briefing Comparison & Historical Delta Studio</span>
-          </h2>
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Automated comparison between current telemetry briefing and previous municipal baseline.
           </p>
@@ -138,7 +138,7 @@ const ReportHistoryTabComponent: React.FC<ReportHistoryTabProps> = ({ analysis }
       {!previousBriefing && (
         <section aria-label="Initial Baseline Information" className="p-8 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
           <GitCompare className="w-10 h-10 text-emerald-600 mx-auto mb-2" aria-hidden="true" />
-          <h3 className="text-base font-bold text-navy-900">No previous brief yet</h3>
+          <h2 className="text-base font-bold text-navy-900">No previous brief yet</h2>
           <p className="text-xs text-slate-500 max-w-lg mx-auto leading-relaxed">
             This active session represents your initial municipal air intelligence baseline. As subsequent telemetry feeds are ingested, HawaSathi automatically computes atmospheric shifts, tracks newly emerged hotspots, and evaluates intervention effectiveness.
           </p>

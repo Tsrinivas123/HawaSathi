@@ -9,8 +9,16 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic';
 import { Sidebar } from '@/components/Sidebar';
 import { TopNav } from '@/components/TopNav';
-import { OverviewTab } from '@/components/OverviewTab';
-import { TraceModal } from '@/components/TraceModal';
+// OverviewTab and TraceModal lazy loaded for optimal First Load JS performance
+const OverviewTab = dynamic(
+  () => import('@/components/OverviewTab').then((m) => m.OverviewTab),
+  { loading: () => <TabLoadingSkeleton title="Overview" /> }
+);
+
+const TraceModal = dynamic(
+  () => import('@/components/TraceModal').then((m) => m.TraceModal),
+  { ssr: false }
+);
 import {
   AirRecord,
   DataQualityReport,
@@ -19,9 +27,6 @@ import {
   Language,
   StakeholderAction,
 } from '@/lib/types';
-import { parseAndNormalizeData } from '@/lib/normalizer';
-import { BHOPAL_MESSY_SAMPLE_CSV } from '@/lib/sampleData';
-import { generateDeterministicIntelligence } from '@/lib/gemini/fallbackGenerator';
 import { buildRecordLookupMap, getAqiCategory } from '@/lib/utils';
 import { SYSTEM_LIMITS } from '@/lib/constants';
 import {
@@ -187,6 +192,7 @@ export default function Home() {
             : SYSTEM_LIMITS.BASELINE_HISTORICAL_AQI;
 
         const category = getAqiCategory(avgAqi);
+        const { generateDeterministicIntelligence } = await import('@/lib/gemini/fallbackGenerator');
         const fallbackResult = generateDeterministicIntelligence(
           recList,
           report,
@@ -228,7 +234,7 @@ export default function Home() {
 
   // Parse raw text into structured telemetry with cache to avoid re-normalization
   const handleDataParsed = useCallback(
-    (rawCsv: string) => {
+    async (rawCsv: string) => {
       try {
         if (lastNormalizedCsvRef.current === rawCsv && lastNormalizedResultRef.current) {
           const { records: cachedRecords, qualityReport: cachedReport } = lastNormalizedResultRef.current;
@@ -238,6 +244,7 @@ export default function Home() {
           return;
         }
 
+        const { parseAndNormalizeData } = await import('@/lib/normalizer');
         const result = parseAndNormalizeData(rawCsv);
         lastNormalizedCsvRef.current = rawCsv;
         lastNormalizedResultRef.current = result;
@@ -252,23 +259,35 @@ export default function Home() {
     [runAnalysisWithRecords]
   );
 
-  // Auto-initialize with stored preferences and realistic Bhopal telemetry feed on mount
+  // Load saved user preferences (stakeholder persona and language) on mount
   useEffect(() => {
     const savedS = getStoredStakeholder();
     if (savedS) setStakeholder(savedS);
     const savedL = getStoredLanguage();
     if (savedL) setLanguage(savedL);
+  }, []);
 
-    try {
-      const { records: parsedRecords, qualityReport: parsedReport } =
-        parseAndNormalizeData(BHOPAL_MESSY_SAMPLE_CSV);
-      setRecords(parsedRecords);
-      setQualityReport(parsedReport);
-      runAnalysisWithRecords(parsedRecords, parsedReport);
-    } catch (_err) {
-      // Handled cleanly
+  // Explicit user action to load demo dataset
+  const handleLoadSample = useCallback(async () => {
+    const { BHOPAL_MESSY_SAMPLE_CSV } = await import('@/lib/sampleData');
+    handleDataParsed(BHOPAL_MESSY_SAMPLE_CSV);
+  }, [handleDataParsed]);
+
+  // Explicit user action to reset workspace and clear dataset
+  const handleResetWorkspace = useCallback(() => {
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm('Are you sure you want to remove the active dataset and reset your studio workspace?')
+    ) {
+      return;
     }
-  }, [runAnalysisWithRecords]);
+    setRecords([]);
+    setQualityReport(null);
+    setAnalysis(null);
+    lastNormalizedCsvRef.current = '';
+    lastNormalizedResultRef.current = null;
+    setActiveTab('overview');
+  }, []);
 
   // Fast O(1) trace modal lookup
   const handleOpenTrace = useCallback(
@@ -339,6 +358,7 @@ export default function Home() {
           hasData={records.length > 0}
           recordCount={records.length}
           onToggleGuide={() => setActiveTab('overview')}
+          onResetWorkspace={handleResetWorkspace}
         />
 
         {/* Tab Content Container */}
@@ -357,7 +377,7 @@ export default function Home() {
                 stakeholder={stakeholder}
                 setActiveTab={setActiveTab}
                 onOpenTrace={handleOpenTrace}
-                onLoadSample={() => handleDataParsed(BHOPAL_MESSY_SAMPLE_CSV)}
+                onLoadSample={handleLoadSample}
                 language={language}
               />
             )}
@@ -368,6 +388,7 @@ export default function Home() {
                 qualityReport={qualityReport}
                 onDataParsed={handleDataParsed}
                 onOpenTrace={handleOpenTrace}
+                onResetWorkspace={handleResetWorkspace}
               />
             )}
 

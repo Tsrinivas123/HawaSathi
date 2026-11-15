@@ -39,7 +39,7 @@ const TraceModalComponent: React.FC<TraceModalProps> = ({ record, onClose }) => 
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span id="trace-modal-title" className="font-mono font-bold text-sm">{record.id}</span>
+                <h2 id="trace-modal-title" className="font-mono font-bold text-sm">{record.id}</h2>
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase ${
                     record.status === 'valid'
@@ -85,9 +85,9 @@ const TraceModalComponent: React.FC<TraceModalProps> = ({ record, onClose }) => 
 
           {/* Measured & Normalized Pollutants Grid */}
           <div>
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
               Harmonized Pollutant Readings
-            </h4>
+            </h3>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                 <span className="text-[10px] text-slate-400">PM2.5</span>
@@ -130,9 +130,9 @@ const TraceModalComponent: React.FC<TraceModalProps> = ({ record, onClose }) => 
 
           {/* Normalization Audit Trail */}
           <div>
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
               Transformations Applied to this Row
-            </h4>
+            </h3>
             {record.conversionsApplied.length === 0 ? (
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
@@ -155,10 +155,10 @@ const TraceModalComponent: React.FC<TraceModalProps> = ({ record, onClose }) => 
           {/* Anomaly & Quality Flags */}
           {record.flags.length > 0 && (
             <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-wider text-amber-600 mb-2 flex items-center space-x-1.5">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-amber-600 mb-2 flex items-center space-x-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Data Quality Flags</span>
-              </h4>
+              </h3>
               <ul className="space-y-1.5">
                 {record.flags.map((flag, i) => (
                   <li

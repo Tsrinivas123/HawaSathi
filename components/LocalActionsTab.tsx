@@ -102,15 +102,27 @@ const LocalActionsTabComponent: React.FC<LocalActionsTabProps> = ({
     }
   };
 
+  if (!actions || actions.length === 0) {
+    return (
+      <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+        <ClipboardCheck className="w-10 h-10 text-emerald-600 mx-auto mb-3" aria-hidden="true" />
+        <h1 className="text-base font-bold text-navy-900">No Action Directives Formulated Yet</h1>
+        <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
+          Local interventions will be formulated and tailored for your active stakeholder persona once air-quality telemetry is ingested and analyzed.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header and Filter */}
       <section aria-label="Action Directives Filter" className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-navy-900 flex items-center space-x-2">
+          <h1 className="text-base font-bold text-navy-900 flex items-center space-x-2">
             <ClipboardCheck className="w-5 h-5 text-emerald-600" aria-hidden="true" />
             <span>Targeted Local Interventions & Action Directives</span>
-          </h2>
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Evidence-backed civic directives prioritized by stakeholder responsibilities.
           </p>
@@ -229,9 +241,9 @@ const LocalActionsTabComponent: React.FC<LocalActionsTabProps> = ({
                     </span>
                   </div>
 
-                  <h3 className="text-sm font-bold text-navy-900">
+                  <h2 className="text-sm font-bold text-navy-900">
                     {action.actionTitle}
-                  </h3>
+                  </h2>
                   <p className="text-xs text-slate-600 leading-relaxed">
                     {action.description}
                   </p>

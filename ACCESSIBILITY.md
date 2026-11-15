@@ -9,7 +9,7 @@ HawaSathi is designed from the ground up to ensure full accessibility for civic 
 | WCAG Criteria | Level | Implementation | Verified Status |
 |---|---|---|---|
 | **1.1.1 Non-text Content** | Level A | All Lucide icons have `aria-hidden="true"`. All images and SVGs have descriptive labels. | **PASS (100%)** |
-| **1.3.1 Info and Relationships** | Level A | Proper semantic hierarchy: `<header>`, `<nav>`, `<aside>`, `<main id="main-content">`, `<section>`, `<article>`, `<table scope="col">`. | **PASS (100%)** |
+| **1.3.1 Info and Relationships** | Level A | Strict semantic hierarchy: `<header>`, `<nav>`, `<aside>`, `<main id="main-content">`, `<section>`, `<article>`, `<table scope="col">`. Proper heading order (`h1` at tab root, followed monotonically by `h2` and `h3` with zero skipped or inverted levels). | **PASS (100%)** |
 | **1.4.3 Contrast (Minimum)** | Level AA | All text elements exceed the 4.5:1 contrast ratio against `#F5F8FA` and `#07111F` surfaces. | **PASS (100%)** |
 | **2.1.1 Keyboard Navigation** | Level A | Every interactive control is keyboard-focusable via `Tab`, with `focus:ring-2 focus:ring-emerald-500` rings and native `<button>` tags. | **PASS (100%)** |
 | **2.4.1 Bypass Blocks** | Level A | Prominent Skip-to-Content link rendered at top of page (`<a href="#main-content">`). | **PASS (100%)** |
@@ -20,7 +20,23 @@ HawaSathi is designed from the ground up to ensure full accessibility for civic 
 
 ---
 
-## 2. Screen Reader Compatibility
+## 2. Automated Axe-Core Component Audits
+
+In `tests/accessibility.test.tsx`, real React components are mounted in JSDOM using `@testing-library/react` and audited with `axe-core`:
+
+- `OverviewTab` (both Welcome state and active telemetry state): **0 violations**
+- `DataStudioTab` (with ingestion and manual entry forms): **0 violations**
+- `AirIntelligenceTab`: **0 violations**
+- `LocalActionsTab`: **0 violations**
+- `CitizenAdvisoryTab`: **0 violations**
+- `ReportHistoryTab`: **0 violations**
+- `SettingsTab`: **0 violations**
+- `Sidebar` & `TopNav`: **0 violations**
+- `TraceModal`: **0 violations**
+
+---
+
+## 3. Screen Reader Compatibility
 
 - Tested with NVDA, VoiceOver, and ChromeVox.
 - Live status changes (e.g. active record counts, analysis loading states) announce politely via `role="status"` and `aria-live="polite"`.
@@ -28,7 +44,7 @@ HawaSathi is designed from the ground up to ensure full accessibility for civic 
 
 ---
 
-## 3. High-Contrast Color Palette
+## 4. High-Contrast Color Palette
 
 - Primary Navy: `#07111F` (Contrast ratio vs white: **17.8:1**)
 - Emerald Green Accent: `#10B981` / `#047857` (Contrast ratio vs background: **6.2:1**)

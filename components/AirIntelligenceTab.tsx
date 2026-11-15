@@ -72,7 +72,7 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
     return (
       <div className="p-16 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
         <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <h3 className="text-base font-bold text-navy-900">Generating Civic Air Quality Intelligence...</h3>
+        <h1 className="text-base font-bold text-navy-900">Generating Civic Air Quality Intelligence...</h1>
         <p className="text-xs text-slate-500 max-w-md mx-auto">
           Google Gemini is analyzing sensor telemetry, identifying pollution clusters, validating evidence records, and drafting stakeholder directives.
         </p>
@@ -84,16 +84,20 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
     return (
       <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
         <Sparkles className="w-10 h-10 text-emerald-600 mx-auto mb-3" aria-hidden="true" />
-        <h3 className="text-base font-bold text-navy-900">No Air Intelligence Generated Yet</h3>
+        <h1 className="text-base font-bold text-navy-900">No Air Intelligence Generated Yet</h1>
         <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
-          Ingest sensor readings or load sample telemetry to trigger our Gemini-powered civic environmental reasoning studio.
+          Ingest sensor readings or load demo telemetry in the Data Studio to trigger our Gemini-powered civic environmental reasoning studio.
         </p>
         <button
           type="button"
           onClick={onRunAnalysis}
           disabled={records.length === 0}
           aria-label="Generate Air Intelligence Briefing"
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs cursor-pointer"
+          className={`px-4 py-2 text-xs font-semibold rounded-xl shadow-xs transition-all ${
+            records.length === 0
+              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+          }`}
         >
           Generate Air Intelligence
         </button>
@@ -111,9 +115,9 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
               <Sparkles className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-navy-900">
+              <h1 className="text-base font-bold text-navy-900">
                 Civic Air Quality Executive Briefing
-              </h2>
+              </h1>
               <p className="text-xs text-slate-400">
                 Generated via {analysis.aiModelUsed || 'Gemini 3.5 Flash'} Multi-Point Reasoning Engine • {new Date(analysis.timestamp).toLocaleTimeString()} IST
               </p>
@@ -158,9 +162,9 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
           <div className="flex items-center space-x-2">
             <BarChart3 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
-            <h3 className="text-sm font-bold text-navy-900">
+            <h2 className="text-sm font-bold text-navy-900">
               Station-Wise Particulate Loading vs CPCB Safe Thresholds
-            </h3>
+            </h2>
           </div>
           <span className="text-xs text-slate-500 font-mono">CPCB Limit: {CPCB_THRESHOLDS.PM25_24H_SAFE} µg/m³ PM2.5</span>
         </div>
@@ -173,9 +177,9 @@ const AirIntelligenceTabComponent: React.FC<AirIntelligenceTabProps> = ({
         <div className="pb-3 border-b border-slate-100 mb-4">
           <div className="flex items-center space-x-2">
             <MapPin className="w-5 h-5 text-red-500" aria-hidden="true" />
-            <h3 className="text-sm font-bold text-navy-900">
+            <h2 className="text-sm font-bold text-navy-900">
               Hotspot Diagnostics (Traceable to Exact Sensor Records)
-            </h3>
+            </h2>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Every hotspot strictly links to uploaded evidence rows. Categories distinguish confirmed facts from hypotheses.

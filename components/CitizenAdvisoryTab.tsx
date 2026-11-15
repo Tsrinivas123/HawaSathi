@@ -132,8 +132,12 @@ ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
 
   if (!advisory) {
     return (
-      <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 text-slate-400">
-        Run AI analysis to generate multilingual citizen advisories.
+      <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+        <Megaphone className="w-10 h-10 text-emerald-600 mx-auto mb-3" aria-hidden="true" />
+        <h1 className="text-base font-bold text-navy-900">No Citizen Advisories Generated Yet</h1>
+        <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
+          Upload air-quality telemetry or load demo data to generate multi-tier citizen advisories across English, Hindi, and Hinglish.
+        </p>
       </div>
     );
   }
@@ -143,10 +147,10 @@ ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
       {/* Configuration Header */}
       <section aria-label="Advisory Controls" className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-navy-900 flex items-center space-x-2">
+          <h1 className="text-base font-bold text-navy-900 flex items-center space-x-2">
             <Megaphone className="w-5 h-5 text-emerald-600" aria-hidden="true" />
             <span>Multilingual Citizen Advisory Studio</span>
-          </h2>
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Clear, actionable public advisories with tailored language and reading comprehension tiers.
           </p>
@@ -273,18 +277,18 @@ ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
 
         {/* Content Body */}
         <div className="mt-5 space-y-4">
-          <h1 className="text-xl font-bold text-navy-900 tracking-tight">
+          <h2 className="text-xl font-bold text-navy-900 tracking-tight">
             {advisory.headline}
-          </h1>
+          </h2>
           <p className="text-sm text-slate-700 leading-relaxed max-w-4xl bg-slate-50/70 p-4 rounded-xl border border-slate-100">
             {advisory.summary}
           </p>
 
           {/* General Guidance Section */}
           <div className="pt-2">
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
               Actionable Public Protocols
-            </h4>
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {advisory.generalGuidance.map((guidance, idx) => (
                 <div
@@ -302,10 +306,10 @@ ISSUED BY: HAWASATHI CIVIC BRIEFING STUDIO
 
           {/* Vulnerable Groups Special Precautions */}
           <div className="pt-4 border-t border-slate-100">
-            <h4 className="text-xs font-bold text-navy-900 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+            <h3 className="text-xs font-bold text-navy-900 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
               <HeartPulse className="w-4 h-4 text-red-500" aria-hidden="true" />
               <span>Protective Measures for Vulnerable Cohorts</span>
-            </h4>
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {advisory.vulnerablePrecautions.map((vp, idx) => (
                 <div
