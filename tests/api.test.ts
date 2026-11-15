@@ -28,6 +28,19 @@ describe('Server API Route /api/analyze Suite', () => {
     expect(data.error).toContain('Invalid Content-Type');
   });
 
+  it('should reject malformed JSON syntax with 400 Bad Request', async () => {
+    const req = new NextRequest('http://localhost:3000/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{ broken json',
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain('Malformed or invalid JSON payload');
+  });
+
   it('should reject empty records payload with 400 Bad Request', async () => {
     const req = new NextRequest('http://localhost:3000/api/analyze', {
       method: 'POST',

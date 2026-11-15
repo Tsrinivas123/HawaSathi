@@ -4,7 +4,7 @@ HawaSathi features a comprehensive, 100% passing test suite across **10 test fil
 
 ---
 
-## 1. Test Suite Architecture (10 Test Files, 54 Tests)
+## 1. Test Suite Architecture (10 Test Files, 55 Tests)
 
 | Test Suite | Path | Tests | Coverage Domain | Status |
 |---|---|---|---|---|
@@ -13,7 +13,7 @@ HawaSathi features a comprehensive, 100% passing test suite across **10 test fil
 | **Data Quality & Audit** | `tests/audit.test.ts` | 7 tests | Quality report metrics, outlier exclusion from averages/charts, suspicious readings identification, duplicate tracking. | **PASS** |
 | **Gemini AI Subsystem** | `tests/gemini.test.ts` | 7 tests | 100% traceable record citation (`REC-001`), dropping fake IDs, rule-based fallback verification, pairwise unique 9-advisory matrix, deterministic reasoning, outlier exclusion. | **PASS** |
 | **Security & Threat Defense** | `tests/security.test.ts` | 6 tests | Batch limits, XSS tag stripping, secret leakage prevention, physical bounds, length truncation, CSV formula injection neutralization (DDE). | **PASS** |
-| **API Route Handler** | `tests/api.test.ts` | 4 tests | `/api/analyze` OPTIONS preflight, 415 rejection on non-JSON, 400 validation on malformed payload, rate limiting headers, CORS origin restrictions. | **PASS** |
+| **API Route Handler** | `tests/api.test.ts` | 5 tests | `/api/analyze` OPTIONS preflight, 415 rejection on non-JSON, 400 validation on malformed JSON syntax, 400 rejection on empty payload, rate limiting headers, CORS origin restrictions. | **PASS** |
 | **Multilingual i18n Suite** | `tests/i18n.test.ts` | 4 tests | Hindi, Hinglish, English dictionary integrity, fallback resolution, translation completeness. | **PASS** |
 | **Storage & Persistence** | `tests/storage.test.ts` | 3 tests | Hybrid browser `localStorage` + SSR in-memory fallback persistence, persona, actions, custom actions, language, reading level, initial "No previous brief yet" vs second run AQI delta. | **PASS** |
 | **Efficiency & Complexity** | `tests/efficiency.test.ts` | 3 tests | O(1) indexed Map lookups (`buildRecordLookupMap`), architectural system limits, large collection throughput. | **PASS** |
@@ -42,7 +42,7 @@ An automated 11-point live verification script executed against the production d
 ## 3. Running the Tests
 
 ```bash
-# Run full automated test suite (54 tests)
+# Run full automated test suite (55 tests)
 npm test
 
 # Run real axe-core accessibility compliance tests across all components
@@ -61,4 +61,4 @@ npm run test:e2e
 node scripts/smoke.mjs https://hawasathi.vercel.app
 ```
 
-All 54 tests pass in ~4 seconds with zero warnings.
+All 55 tests pass in ~4 seconds with zero warnings.
